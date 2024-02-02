@@ -24,6 +24,7 @@ SOFTWARE.
 
 // Includes for basic simulation
 #include <basic.hpp>
+#include <control.hpp>
 
 std::mutex mu, muvideo;
 std::mutex video_frame_mtx;
@@ -32,25 +33,25 @@ bool ready = false;
 bool Exit = false;
 
 // SD
-#define WIDTH 640
-#define HEIGHT 480
+// #define WIDTH 640
+// #define HEIGHT 480
 
 // HD
 // #define WIDTH 1280
 // #define HEIGHT 720
 
 // FHD
-// #define WIDTH 1920
-// #define HEIGHT 1080
+#define WIDTH 1920
+#define HEIGHT 1080
 
 // UHD 4K
 // #define WIDTH 1920*2
 // #define HEIGHT 1080*2
 
 #ifdef USE_OPENCV
-    cv::Size video_size(WIDTH, HEIGHT);
-    cv::Mat video_frame = cv::Mat::zeros(HEIGHT, WIDTH, CV_8UC3);
-    cv::VideoWriter video("video_out.mp4", cv::CAP_FFMPEG, cv::VideoWriter::fourcc('a', 'v', 'c', '1'), 200.0, video_size);
+cv::Size video_size(WIDTH, HEIGHT);
+cv::Mat video_frame = cv::Mat::zeros(HEIGHT, WIDTH, CV_8UC3);
+cv::VideoWriter video;
 #endif
 
 void runSimulation(mjModel *model, mjData *data)
@@ -85,13 +86,13 @@ void render(mjModel *model, mjData *data)
     mjrContext con;
     mjvPerturb pert;
 
-    mjv_defaultCamera(&cam);
+    mjv_defaultFreeCamera(model, &cam);
     mjv_defaultPerturb(&pert);
     mjv_defaultOption(&opt);
     mjr_defaultContext(&con);
 
-    cam.trackbodyid = 0;
-    cam.type = mjCAMERA_TRACKING;
+    // cam.trackbodyid = 0;
+    // cam.type = mjCAMERA_TRACKING;
 
     // create scene and context using copied model
     mjv_makeScene(model, &scn, 1000);
@@ -182,6 +183,11 @@ int main()
     // Load original model and data
     mjModel *m = mj_loadXML("model/arm2.xml", NULL, NULL, 0);
     mjData *d = mj_makeData(m);
+
+// Set video info the same as the simulation model
+#ifdef USE_OPENCV
+    video.open("video_out.mp4", cv::CAP_FFMPEG, cv::VideoWriter::fourcc('a', 'v', 'c', '1'), 1.0/m->opt.timestep, video_size);
+#endif
 
     // Start simulation and rendering threads
     std::thread simThread(runSimulation, m, d);
