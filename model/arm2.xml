@@ -1,0 +1,79 @@
+<mujoco model="arm2">
+  <compiler autolimits="true"/>
+  <option timestep="0.005" iterations="50" solver="Newton" tolerance="1e-10">
+    <flag contact="disable" />
+  </option>
+
+  <visual>
+    <map force="0.1" zfar="30"/>
+    <rgba haze="0.15 0.25 0.35 1"/>
+    <global offwidth="2560" offheight="1440" elevation="20" azimuth="120"/>
+  </visual>
+
+  <statistic center="0 0 0.7"/>
+
+  <asset>
+    <texture type="skybox" builtin="gradient" rgb1=".3 .5 .7" rgb2="0 0 0" width="32" height="512"/>
+    <texture name="body" type="cube" builtin="flat" mark="cross" width="128" height="128" rgb1="0.8 0.6 0.4" rgb2="0.8 0.6 0.4" markrgb="1 1 1" random="0.01"/>
+    <material name="body" texture="body" texuniform="true" rgba="0.8 0.6 .4 1"/>
+    <texture name="grid" type="2d" builtin="checker" width="512" height="512" rgb1=".1 .2 .3" rgb2=".2 .3 .4"/>
+    <material name="grid" texture="grid" texrepeat="1 1" texuniform="true" reflectance=".2"/>
+  </asset>
+
+  <worldbody>
+    <geom name="floor" size="0 0 .05" type="plane" material="grid" condim="3"/>
+    <light name="spotlight" mode="targetbodycom" target="arm" diffuse=".8 .8 .8" specular="0.3 0.3 0.3" pos="0 -6 4" cutoff="30"/>
+
+    <body name="arm" pos="0 0 1.2">
+      <geom name="upper arm" type="capsule" size="0.045" fromto="0 0 0  0 0 -0.5" rgba=".5 .1 .1 .3" condim="6" friction=".6" solimp=".7 .8 .003" solref=".015 1" mass="0.5"/>
+      <joint name="shoulder" type="hinge" solreffriction=".15 1" axis="0 1 0" frictionloss="0.1"/>
+      <!-- <geom name="shoulder" type="cylinder" pos="0 0 0" size=".1 .05" rgba=".5 .1 .8 .3" mass="0.1" group="1"/> -->
+      <site name="hshoulder" pos="0 0 -0.25"/>
+      <body pos="0 0 -0.5">
+        <geom name="forearm" type="capsule" size="0.035" fromto="0 0 0  0 0 -0.5" rgba=".5 .1 .1 .3" condim="6" friction=".6" solimp=".7 .8 .003" solref=".015 1" mass="0.5"/>
+        <joint name="elbow" type="hinge" solreffriction=".15 1" axis="0 1 0" frictionloss="0.1"/>
+        <!-- <geom name="elbow" type="cylinder" pos="0 0 0" size=".08 .05" rgba=".5 .1 .8 .3" mass="0.1" group="1"/> -->
+        <site name="helbow" pos="0 0 -0.25"/>
+      </body>
+    </body>
+
+    <body name="arm_2" pos="0 0 1.2">
+      <geom name="upper arm_2" type="capsule" size="0.045" fromto="0 0 0  0 0 -0.5" rgba=".0 .4 .1 .3" condim="6" friction=".6" solimp=".7 .8 .003" solref=".015 1" mass="0.5"/>
+      <joint name="shoulder_2" type="hinge" solreffriction=".15 1" axis="0 1 0" frictionloss="0.1"/>
+      <!-- <geom name="shoulder_2" type="cylinder" pos="0 0 0" size=".1 .05" rgba=".5 .1 .8 .3" mass="0.1" group="1"/> -->
+      <site name="hshoulder_2" pos="0 0 -0.25"/>
+      <body pos="0 0 -0.5">
+        <geom name="forearm_2" type="capsule" size="0.035" fromto="0 0 0  0 0 -0.5" rgba=".0 .4 .1 .3" condim="6" friction=".6" solimp=".7 .8 .003" solref=".015 1" mass="0.5"/>
+        <joint name="elbow_2" type="hinge" solreffriction=".15 1" axis="0 1 0" frictionloss="0.1"/>
+        <!-- <geom name="elbow_2" type="cylinder" pos="0 0 0" size=".08 .05" rgba=".5 .1 .8 .3" mass="0.1" group="1"/> -->
+        <site name="helbow_2" pos="0 0 -0.25"/>
+      </body>
+    </body>
+
+  </worldbody>
+
+  <actuator>
+    <position name="shoulder_p" joint="shoulder" ctrlrange="-3.1415 3.1415" kp="300"/>
+    <position name="elbow_p" joint="elbow" ctrlrange="-3.1415 3.1415" kp="300"/>
+    <velocity name="shoulder_v" joint="shoulder" ctrlrange="-3.1415 3.1415" kv="0.9"/>
+    <velocity name="elbow_v" joint="elbow" ctrlrange="-3.1415 3.1415" kv="0.9"/>
+
+    <!-- <position name="shoulder_p_2" joint="shoulder_2" ctrlrange="-3.1415 3.1415" kp="30"/>
+    <position name="elbow_p_2" joint="elbow_2" ctrlrange="-3.1415 3.1415" kp="30"/>
+    <velocity name="shoulder_v_2" joint="shoulder_2" ctrlrange="-3.1415 3.1415" kv="0.9"/>
+    <velocity name="elbow_v_2" joint="elbow_2" ctrlrange="-3.1415 3.1415" kv="0.9"/> -->
+  </actuator>
+
+  <tendon>
+  <spatial name="hshoulder_tendon" stiffness="1300" damping="100" range="0 100" springlength="-1 -1" limited="true" width=".002" rgba=".95 .3 .3 1">
+      <site site="hshoulder"/>
+      <site site="hshoulder_2"/>
+
+    </spatial>
+    <spatial name="helbow_tendon" stiffness="1300" damping="100" range="0 100" springlength="-1 -1" limited="true" width=".002" rgba=".95 .3 .3 1">
+      <site site="helbow"/>
+      <site site="helbow_2"/>
+    </spatial>
+  </tendon>
+
+</mujoco>
