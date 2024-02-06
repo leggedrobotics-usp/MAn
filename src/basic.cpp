@@ -25,6 +25,7 @@ SOFTWARE.
 // Includes for basic simulation
 #include <basic.hpp>
 #include <control.hpp>
+#include <graphics.hpp>
 
 std::mutex mu, muvideo;
 std::mutex video_frame_mtx;
@@ -33,7 +34,10 @@ bool ready = false;
 bool Exit = false;
 const bool high_quality_encoding = false;
 bool save_to_csv = true;
+bool show_plot_figure = true;
 csv::csv_writer *writer = nullptr;
+mjvFigure figure;
+
 // SD
 // #define WIDTH 640
 // #define HEIGHT 480
@@ -70,6 +74,10 @@ void runSimulation(mjModel *model, mjData *data)
             {
                 writer->append(data->time);
                 writer->append(data->qpos, model->nq);
+            }
+            if (show_plot_figure)
+            {
+                graphics::set_figure(&figure, model, data);
             }
             ready = false;
         }
@@ -110,6 +118,7 @@ void render(mjModel *model, mjData *data)
 
     mjrRect render_viewport = {0, 0, WIDTH, HEIGHT};
     mjrRect viewport = {0, 0, 0, 0};
+    mjrRect figure_viewport = {WIDTH - WIDTH / 2, HEIGHT - HEIGHT / 2, WIDTH / 2, HEIGHT / 2};
 
     // run main rendering loop
     while (!glfwWindowShouldClose(window))
@@ -129,6 +138,7 @@ void render(mjModel *model, mjData *data)
 
         // render the scene
         mjr_render(render_viewport, &scn, &con);
+        mjr_figure(figure_viewport, &figure, &con);
         mjr_blitBuffer(render_viewport, viewport, 1, 0, &con);
 
         // Get rendered OpenGL frame to video frame
@@ -193,9 +203,11 @@ int main()
     mjModel *m = mj_loadXML("model/arm2.xml", NULL, NULL, 0);
     mjData *d = mj_makeData(m);
 
-     // Saving log to CSV file
+    // Saving log to CSV file
     writer = new csv::csv_writer("log_arm2.csv");
     std::vector<std::string> jnt_names = basic::joint_names(m, d);
+
+    graphics::init_figure(&figure, m, "Time x Joints", jnt_names);
 
     std::vector<std::string> headers;
     headers.push_back("time");
@@ -208,7 +220,8 @@ int main()
 // Set video info the same as the simulation model
 #ifdef USE_OPENCV
     int fourcc_ = cv::VideoWriter::fourcc('a', 'v', 'c', '1');
-    if (high_quality_encoding) {
+    if (high_quality_encoding)
+    {
         fourcc_ = cv::VideoWriter::fourcc('h', 'e', 'v', '1');
     }
     // video.set(cv::CAP_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_ANY);

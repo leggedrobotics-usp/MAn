@@ -73,7 +73,7 @@ namespace csv
             {
                 file << cols[i] << separator;
             }
-            
+
             file << std::endl;
             file.flush();
         }
@@ -149,9 +149,8 @@ namespace csv
 
         void append(double *val)
         {
-           this->append(val, this->cols.size());
+            this->append(val, this->cols.size());
         }
-
     };
 
 }
