@@ -31,7 +31,9 @@ std::mutex video_frame_mtx;
 std::condition_variable condv, condvideo;
 bool ready = false;
 bool Exit = false;
-
+const bool high_quality_encoding = false;
+bool save_to_csv = true;
+csv::csv_writer *writer = nullptr;
 // SD
 // #define WIDTH 640
 // #define HEIGHT 480
@@ -64,6 +66,11 @@ void runSimulation(mjModel *model, mjData *data)
                        { return ready; });
             // Simulation step
             mj_step(model, data);
+            if (save_to_csv && writer)
+            {
+                writer->append(data->time);
+                writer->append(data->qpos, model->nq);
+            }
             ready = false;
         }
         condv.notify_one();
@@ -143,6 +150,8 @@ void render(mjModel *model, mjData *data)
     }
     mjr_restoreBuffer(&con);
     Exit = true;
+    condvideo.notify_one();
+    condv.notify_one();
 
 #ifdef USE_OPENCV
     video.release();
@@ -184,9 +193,29 @@ int main()
     mjModel *m = mj_loadXML("model/arm2.xml", NULL, NULL, 0);
     mjData *d = mj_makeData(m);
 
+     // Saving log to CSV file
+    writer = new csv::csv_writer("log_arm2.csv");
+    std::vector<std::string> jnt_names = basic::joint_names(m, d);
+
+    std::vector<std::string> headers;
+    headers.push_back("time");
+
+    headers.insert(headers.end(), jnt_names.begin(), jnt_names.end());
+
+    printf("nq %d njnt %d headers %ld\n", m->nq, m->njnt, headers.size());
+    writer->set_headers(headers);
+
 // Set video info the same as the simulation model
 #ifdef USE_OPENCV
-    video.open("video_out.mp4", cv::CAP_FFMPEG, cv::VideoWriter::fourcc('a', 'v', 'c', '1'), 1.0/m->opt.timestep, video_size);
+    int fourcc_ = cv::VideoWriter::fourcc('a', 'v', 'c', '1');
+    if (high_quality_encoding) {
+        fourcc_ = cv::VideoWriter::fourcc('h', 'e', 'v', '1');
+    }
+    // video.set(cv::CAP_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_ANY);
+    std::vector<int> params;
+    // params.push_back(cv::CAP_PROP_HW_ACCELERATION);
+    // params.push_back(cv::VIDEO_ACCELERATION_ANY);
+    video.open("video_out.mp4", cv::CAP_FFMPEG, fourcc_, 1.0 / m->opt.timestep, video_size, params);
 #endif
 
     // Start simulation and rendering threads
