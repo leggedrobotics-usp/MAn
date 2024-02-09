@@ -102,8 +102,8 @@ namespace control
             mju::mju_mul(dp, dp, m->tendon_stiffness, 2); // dp = (da-db) * k
 
             // solving for damping
-            mju_sub(dv, d->qpos, d->qpos + 2, 2);     // dv = (dva-dvb)
-            mju::mju_mul(dv, dv, m->tendon_damping, 2); // dv = (dva-dvb) * b
+            // mju_sub(dv, d->qpos, d->qpos + 2, 2);     // dv = (dva-dvb)
+            // mju::mju_mul(dv, dv, m->tendon_damping, 2); // dv = (dva-dvb) * b
 
             // fi = dp + dv
             // fi = (da-db) * k + (dva-dvb) * b

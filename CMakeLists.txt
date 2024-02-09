@@ -88,7 +88,7 @@ include(FetchContent)
 ################################################
 ## Compile as C++11 only in C++ compilation context
 set(CMAKE_CXX_FLAGS
-"${CMAKE_CXX_FLAGS} -std=c++11 -pthread -D__STDC_CONSTANT_MACROS"
+"${CMAKE_CXX_FLAGS} -std=c++11 -pthread -O3 -D__STDC_CONSTANT_MACROS"
 )
 
 

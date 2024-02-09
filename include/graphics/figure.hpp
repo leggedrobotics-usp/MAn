@@ -36,16 +36,21 @@ namespace graphics
         int nlines = 0;
         int npts = 0;
         bool auto_range = true;
+        std::thread t;
 
         Figure() = default;
 
         ~Figure()
         {
+            if (t.joinable())
+                t.join();
             delete this->f;
         }
 
         mjvFigure *get()
         {
+            if (t.joinable())
+                t.join();
             return this->f;
         }
 
@@ -66,36 +71,38 @@ namespace graphics
 
         void append(mjtNum xvalue, mjtNum *yvalues)
         {
-            // Calculate the memsize to be moved before appending new values
-            size_t memsize = ((npts - 1) * sizeof(mjtNum)) << 1; // << 1 == * 2
+            t = std::thread([&]()
+                            {
+                // Calculate the memsize to be moved before appending new values
+                size_t memsize = ((npts - 1) * sizeof(mjtNum)) << 1; // << 1 == * 2
 
-            // Move previous points
-            if (npts == mjMAXLINEPNT)
+                // Move previous points
+                if (npts == mjMAXLINEPNT)
+                    for (int i = 0; i < nlines; ++i)
+                        for (int j = 0; j < ((npts - 1) << 1); ++j)
+                            this->f->linedata[i][j] = this->f->linedata[i][j + 2];
+
+                // Update points per line
+                npts = std::min(npts + 1, mjMAXLINEPNT);
+
+                // Last (available) position
+                int lasti = (npts - 1) << 1; // (npts -1) * 2 : because point has two numbers
+
+                // Append given points to the last position
                 for (int i = 0; i < nlines; ++i)
-                    for (int j = 0; j < ((npts - 1) << 1); ++j)
-                        this->f->linedata[i][j] = this->f->linedata[i][j + 2];
+                {
+                    // Set each line data appended points
+                    this->f->linedata[i][lasti] = xvalue;         // x value
+                    this->f->linedata[i][lasti + 1] = yvalues[i]; // y value
+                    this->f->linepnt[i] = npts;
+                }
 
-            // Update points per line
-            npts = std::min(npts + 1, mjMAXLINEPNT);
-
-            // Last (available) position
-            int lasti = (npts - 1) << 1; // (npts -1) * 2 : because point has two numbers
-
-            // Append given points to the last position
-            for (int i = 0; i < nlines; ++i)
-            {
-                // Set each line data appended points
-                this->f->linedata[i][lasti] = xvalue;         // x value
-                this->f->linedata[i][lasti + 1] = yvalues[i]; // y value
-                this->f->linepnt[i] = npts;
-            }
-
-            // If using auto ranging, use the first point x value, and the last point x values
-            if (auto_range)
-            {
-                this->f->range[0][0] = this->f->linedata[0][0];     // min x value
-                this->f->range[0][1] = this->f->linedata[0][lasti]; // max x value
-            }
+                // If using auto ranging, use the first point x value, and the last point x values
+                if (auto_range)
+                {
+                    this->f->range[0][0] = this->f->linedata[0][0];     // min x value
+                    this->f->range[0][1] = this->f->linedata[0][lasti]; // max x value
+                } });
         }
 
         void set_title(std::string title)

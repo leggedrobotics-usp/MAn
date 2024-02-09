@@ -35,33 +35,38 @@ std::condition_variable condv, condvideo;
 bool ready = false;
 bool Exit = false;
 const bool high_quality_encoding = false;
+const bool high_quality_rendering = false;
 bool save_to_csv = true;
 bool show_plot_figure = true;
-bool video_record = true;
+bool video_record = false;
 csv::csv_writer *writer = nullptr;
 graphics::FigureTimeQpos *time_qpos = nullptr;
 graphics::FigureTimeInteractionForce *time_interaction_force = nullptr;
 graphics::FigureTimeFeedForwardForce *time_feedforward_force = nullptr;
 
+// Set initial window size
+#define WINDOW_WIDTH 1280
+#define WINDOW_HEIGHT 720
+
 // SD
-// #define WIDTH 640
-// #define HEIGHT 480
+// #define RENDER_WIDTH 640
+// #define RENDER_HEIGHT 480
 
 // HD
-// #define WIDTH 1280
-// #define HEIGHT 720
+// #define RENDER_WIDTH 1280
+// #define RENDER_HEIGHT 720
 
 // FHD
-#define WIDTH 1920
-#define HEIGHT 1080
+#define RENDER_WIDTH 1920
+#define RENDER_HEIGHT 1080
 
 // UHD 4K
-// #define WIDTH 1920*2
-// #define HEIGHT 1080*2
+// #define RENDER_WIDTH 1920*2
+// #define RENDER_HEIGHT 1080*2
 
 #ifdef USE_OPENCV
-cv::Size video_size(WIDTH, HEIGHT);
-cv::Mat video_frame = cv::Mat::zeros(HEIGHT, WIDTH, CV_8UC3);
+cv::Size video_size(RENDER_WIDTH, RENDER_HEIGHT);
+cv::Mat video_frame;
 cv::VideoWriter video;
 #endif
 
@@ -73,6 +78,8 @@ void runSimulation(mjModel *model, mjData *data)
             std::unique_lock<std::mutex> lock(mu);
             condv.wait(lock, []
                        { return ready; });
+            if (Exit)
+                break;
             // Simulation step
             mj_step(model, data);
             if (save_to_csv && writer)
@@ -96,10 +103,10 @@ void render(mjModel *model, mjData *data)
 {
     // init GLFW, create window, make OpenGL context current, request v-sync
     glfwInit();
-    GLFWwindow *window = glfwCreateWindow(WIDTH, HEIGHT, "MAn: Motion Antecipation", NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "MAn: Motion Antecipation", NULL, NULL);
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1);
-    glfwSetWindowAttrib(window, GLFW_RESIZABLE, GLFW_FALSE);
+    // glfwSetWindowAttrib(window, GLFW_RESIZABLE, GLFW_FALSE);
 
     // initialize visualization data structures
     mjvCamera cam;
@@ -121,15 +128,15 @@ void render(mjModel *model, mjData *data)
     mjr_makeContext(model, &con, mjFONTSCALE_100);
 
     mjr_setBuffer(mjFB_OFFSCREEN, &con);
-    mjr_resizeOffscreen(WIDTH, HEIGHT, &con);
+    mjr_resizeOffscreen(RENDER_WIDTH, RENDER_HEIGHT, &con);
 
-    mjrRect render_viewport = {0, 0, WIDTH, HEIGHT};
+    mjrRect render_viewport = {0, 0, RENDER_WIDTH, RENDER_HEIGHT};
     mjrRect viewport = {0, 0, 0, 0};
-    mjrRect recording_label_viewport = {0, HEIGHT - 30, 120, 30};
-    mjrRect figure_viewport0 = {0, HEIGHT - HEIGHT / 2, WIDTH / 2, HEIGHT / 2};
-    mjrRect figure_viewport1 = {WIDTH - WIDTH / 2, HEIGHT - HEIGHT / 2, WIDTH / 2, HEIGHT / 2};
-    mjrRect figure_viewport2 = {0, 0, WIDTH / 2, HEIGHT / 2};
-    mjrRect figure_viewport3 = {WIDTH - WIDTH / 2, 0, WIDTH / 2, HEIGHT / 2};
+    mjrRect recording_label_viewport = {0, RENDER_HEIGHT - 30, 120, 30};
+    mjrRect figure_viewport0 = {0, RENDER_HEIGHT - RENDER_HEIGHT / 2, RENDER_WIDTH / 2, RENDER_HEIGHT / 2};
+    mjrRect figure_viewport1 = {RENDER_WIDTH - RENDER_WIDTH / 2, RENDER_HEIGHT - RENDER_HEIGHT / 2, RENDER_WIDTH / 2, RENDER_HEIGHT / 2};
+    mjrRect figure_viewport2 = {0, 0, RENDER_WIDTH / 2, RENDER_HEIGHT / 2};
+    mjrRect figure_viewport3 = {RENDER_WIDTH - RENDER_WIDTH / 2, 0, RENDER_WIDTH / 2, RENDER_HEIGHT / 2};
 
     // run main rendering loop
     while (!glfwWindowShouldClose(window))
@@ -158,19 +165,19 @@ void render(mjModel *model, mjData *data)
         }
         condv.notify_one();
 
-        // Get rendered OpenGL frame to video frame
-        video_frame_mtx.lock();
-
-#ifdef USE_OPENCV
-        mjr_readPixels(video_frame.data, nullptr, render_viewport, &con);
-#endif
-
-        video_frame_mtx.unlock();
-
-        condvideo.notify_one();
-
         if (video_record)
         {
+            // Get rendered OpenGL frame to video frame
+            video_frame_mtx.lock();
+
+#ifdef USE_OPENCV
+            mjr_readPixels(video_frame.data, nullptr, render_viewport, &con);
+#endif
+
+            video_frame_mtx.unlock();
+
+            condvideo.notify_one();
+
             // render recording label to screen
             mjr_setBuffer(mjFB_WINDOW, &con);
             mjr_label(recording_label_viewport, mjFONT_NORMAL, "Recording...", 1, 1, 0, 1, 1, 0, 0, &con);
@@ -185,11 +192,11 @@ void render(mjModel *model, mjData *data)
     mjr_restoreBuffer(&con);
     Exit = true;
     condvideo.notify_one();
+    {
+        std::unique_lock<std::mutex> lock(mu);
+        ready = true;
+    }
     condv.notify_one();
-
-#ifdef USE_OPENCV
-    video.release();
-#endif
 
     // cleanup GLFW and visualization structures
     glfwTerminate();
@@ -198,15 +205,34 @@ void render(mjModel *model, mjData *data)
     exit(0);
 }
 
-void video_thread()
+void video_thread(mjModel *m, mjData *d)
 {
     if (!video_record)
         return;
+
+    video_frame = cv::Mat::zeros(RENDER_HEIGHT, RENDER_WIDTH, CV_8UC3);
+
+    // Set video info the same as the simulation model
+#ifdef USE_OPENCV
+    int fourcc_ = cv::VideoWriter::fourcc('a', 'v', 'c', '1');
+    if (high_quality_encoding)
+    {
+        fourcc_ = cv::VideoWriter::fourcc('h', 'e', 'v', '1');
+    }
+    // video.set(cv::CAP_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_ANY);
+    std::vector<int> params;
+    // params.push_back(cv::CAP_PROP_HW_ACCELERATION);
+    // params.push_back(cv::VIDEO_ACCELERATION_ANY);
+    video.open("video_out.mp4", cv::CAP_FFMPEG, fourcc_, 1.0 / m->opt.timestep, video_size, params);
+#endif
+
     while (!Exit)
     {
         // Wait for new frame to be available from OpenGL
         std::unique_lock<std::mutex> lock(muvideo);
         condv.wait(lock);
+        if (Exit)
+            break;
 
         video_frame_mtx.lock();
 
@@ -220,6 +246,10 @@ void video_thread()
 #endif
         video_frame_mtx.unlock();
     }
+
+#ifdef USE_OPENCV
+    video.release();
+#endif
 }
 
 int main()
@@ -227,6 +257,7 @@ int main()
     // Load original model and data
     mjModel *m = mj_loadXML("model/arm2.xml", NULL, NULL, 0);
     mjData *d = mj_makeData(m);
+    m->vis.quality.offsamples = high_quality_rendering ? 4 : 1;
 
     time_qpos = new graphics::FigureTimeQpos(m, d);
     time_interaction_force = new graphics::FigureTimeInteractionForce(d, control::variables_to_plot, 0,
@@ -243,32 +274,21 @@ int main()
 
     headers.insert(headers.end(), jnt_names.begin(), jnt_names.end());
 
-    printf("nq %d njnt %d headers %ld\n", m->nq, m->njnt, headers.size());
+    // printf("nq %d njnt %d headers %ld\n", m->nq, m->njnt, headers.size());
     writer->set_headers(headers);
-
-// Set video info the same as the simulation model
-#ifdef USE_OPENCV
-    int fourcc_ = cv::VideoWriter::fourcc('a', 'v', 'c', '1');
-    if (high_quality_encoding)
-    {
-        fourcc_ = cv::VideoWriter::fourcc('h', 'e', 'v', '1');
-    }
-    // video.set(cv::CAP_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_ANY);
-    std::vector<int> params;
-    // params.push_back(cv::CAP_PROP_HW_ACCELERATION);
-    // params.push_back(cv::VIDEO_ACCELERATION_ANY);
-    video.open("video_out.mp4", cv::CAP_FFMPEG, fourcc_, 1.0 / m->opt.timestep, video_size, params);
-#endif
 
     // Start simulation and rendering threads
     std::thread simThread(runSimulation, m, d);
     std::thread renderThread(render, m, d);
-    std::thread videoThread(video_thread);
+    std::thread videoThread(video_thread, m, d);
 
     // Join threads
-    simThread.join();
-    renderThread.join();
-    videoThread.join();
+    if (simThread.joinable())
+        simThread.join();
+    if (renderThread.joinable())
+        renderThread.join();
+    if (videoThread.joinable())
+        videoThread.join();
 
     // Cleanup
     mj_deleteData(d);

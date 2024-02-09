@@ -106,7 +106,7 @@ namespace csv
         {
             if (cols.size() == 0)
             {
-                printf("[INFO] writer has %ld names.", names.size());
+                // printf("[INFO] writer has %ld names.", names.size());
                 cols.assign(names.begin(), names.end());
                 file.open(file_name, std::fstream::out);
                 write_headers();
