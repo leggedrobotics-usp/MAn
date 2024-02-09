@@ -23,11 +23,14 @@ SOFTWARE.
 */
 
 #ifndef __GRAPHICS__H_
+#define __GRAPHICS__H_
 
 #include <string>
 #include <cstring>
 #include <vector>
 #include <mujoco/mujoco.h>
+#include <control.hpp>
+#include <graphics/figure.hpp>
 
 namespace graphics
 {
@@ -42,6 +45,7 @@ namespace graphics
         figure->range[0][0] = timestamp - (m->opt.timestep * i);
         figure->range[0][1] = timestamp;
 
+        // Position Variables to plot
         for (int q = 0; q < m->nq; ++q)
             figure->linepnt[q] = i;
 
@@ -58,6 +62,32 @@ namespace graphics
                     int jj = j * 2;
                     figure->linedata[q][jj] = figure->linedata[q][jj + 2];
                     figure->linedata[q][jj + 1] = figure->linedata[q][jj + 3];
+                }
+
+
+        // Control Variables to plot
+        int offset = m->nq; // offset of qpos
+        for (int ii = 0; ii < 4; ++ii)
+            figure->linepnt[offset + ii] = i;
+
+        for (int ii = 0; ii < 2; ++ii)
+        {
+            // Interaction Force
+            figure->linedata[offset + ii][i * 2] = timestamp;
+            figure->linedata[offset + ii][i * 2 + 1] = control::variables_to_plot[ii];
+            
+            // feedforward
+            figure->linedata[offset + ii + 2][i * 2] = timestamp;
+            figure->linedata[offset + ii + 2][i * 2 + 1] = control::variables_to_plot[ii + 2];
+        }
+
+        if (i == mjMAXLINEPNT - 1)
+            for (int ii = 0; ii < 4; ++ii)
+                for (int j = 0; j < i; ++j)
+                {
+                    int jj = j * 2;
+                    figure->linedata[offset + ii][jj] = figure->linedata[offset + ii][jj + 2];
+                    figure->linedata[offset + ii][jj + 1] = figure->linedata[offset + ii][jj + 3];
                 }
     }
 
@@ -77,19 +107,35 @@ namespace graphics
         figure->gridsize[0] = 10;
         figure->gridsize[1] = 10;
 
+
+        // Position Variables to plot
         for (int q = 0; q < m->nq; ++q)
         {
             float *rgb = figure->linergb[q];
             rgb[0] = static_cast<float>(rand() % 256) * scale_factor;
             rgb[1] = static_cast<float>(rand() % 256) * scale_factor;
             rgb[2] = static_cast<float>(rand() % 256) * scale_factor;
-        }
-        for (int q = 0; q < m->nq; ++q)
-        {
+
+            // Setting legend name
             strcpy(figure->linename[q], headers[q].c_str());
 
-            // fill with zeros
+            // fill data with zeros
             memset(figure->linedata[q], 0, mjMAXLINEPNT);
+        }
+
+        // Control Variables to plot
+        int offset = m->nq; // offset of qpos
+        for (int i = 0; i < control::n_variables_to_plot; ++i) {
+            float *rgb = figure->linergb[offset + i];
+            rgb[0] = static_cast<float>(rand() % 256) * scale_factor;
+            rgb[1] = static_cast<float>(rand() % 256) * scale_factor;
+            rgb[2] = static_cast<float>(rand() % 256) * scale_factor;
+
+            // Setting legend name
+            strcpy(figure->linename[offset + i], control::variables_to_plot_names[i].c_str());
+
+            // fill data with zeros
+            memset(figure->linedata[offset + i], 0, mjMAXLINEPNT);
         }
     }
 }

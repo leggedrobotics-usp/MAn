@@ -22,18 +22,40 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#ifndef __BASIC__H_
-#define __BASIC__H_
+#ifndef __GRAPHICS_TIME_QPOS__H_
+#define __GRAPHICS_TIME_QPOS__H_
 
-#include <thread>
-#include <mutex>
-#include <condition_variable>
-#include <cassert>
-#include <GLFW/glfw3.h>
-#include <mujoco/mujoco.h>
-#include <csv/csv.hpp>
-#ifdef USE_OPENCV
-#include <opencv4/opencv2/opencv.hpp>
-#endif
+#include <graphics/figure.hpp>
+#include <utils/mj.hpp>
+#include <string>
+#include <cstring>
+#include <vector>
+#include <control.hpp>
 
-#endif // __BASIC__H_
+namespace graphics
+{
+    class FigureTimeQpos : public Figure
+    {
+    public:
+        mjModel *m;
+        mjData *d;
+
+        FigureTimeQpos(mjModel *m, mjData *d) : m(m), d(d)
+        {
+            init();
+            set_title("Time x Joints' Positions");
+            set_xlabel("Time (s)");
+
+            // Setting legends for joint names
+            std::vector<std::string> jnt_names = mj::joint_names(m, d);
+            set_legends(jnt_names);
+        }
+
+        void update()
+        {
+            append(d->time, d->qpos);
+        }
+    };
+}
+
+#endif // __GRAPHICS_TIME_QPOS__H_

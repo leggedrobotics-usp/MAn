@@ -24,8 +24,8 @@ SOFTWARE.
 
 // Includes for basic simulation
 #include <basic.hpp>
-#include <control.hpp>
 #include <graphics.hpp>
+#include <graphics/time_qpos.hpp>
 
 std::mutex mu, muvideo;
 std::mutex video_frame_mtx;
@@ -35,8 +35,9 @@ bool Exit = false;
 const bool high_quality_encoding = false;
 bool save_to_csv = true;
 bool show_plot_figure = true;
+bool video_record = false;
 csv::csv_writer *writer = nullptr;
-mjvFigure figure;
+graphics::FigureTimeQpos *time_qpos = nullptr;
 
 // SD
 // #define WIDTH 640
@@ -77,7 +78,7 @@ void runSimulation(mjModel *model, mjData *data)
             }
             if (show_plot_figure)
             {
-                graphics::set_figure(&figure, model, data);
+                time_qpos->update();
             }
             ready = false;
         }
@@ -89,7 +90,7 @@ void render(mjModel *model, mjData *data)
 {
     // init GLFW, create window, make OpenGL context current, request v-sync
     glfwInit();
-    GLFWwindow *window = glfwCreateWindow(WIDTH, HEIGHT, "Basic", NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(WIDTH, HEIGHT, "MAn: Motion Antecipation", NULL, NULL);
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1);
     glfwSetWindowAttrib(window, GLFW_RESIZABLE, GLFW_FALSE);
@@ -118,7 +119,11 @@ void render(mjModel *model, mjData *data)
 
     mjrRect render_viewport = {0, 0, WIDTH, HEIGHT};
     mjrRect viewport = {0, 0, 0, 0};
-    mjrRect figure_viewport = {WIDTH - WIDTH / 2, HEIGHT - HEIGHT / 2, WIDTH / 2, HEIGHT / 2};
+    mjrRect recording_label_viewport = {0, HEIGHT - 30, 120, 30};
+    mjrRect figure_viewport0 = {0, HEIGHT - HEIGHT / 2, WIDTH / 2, HEIGHT / 2};
+    mjrRect figure_viewport1 = {WIDTH - WIDTH / 2, HEIGHT - HEIGHT / 2, WIDTH / 2, HEIGHT / 2};
+    mjrRect figure_viewport2 = {0, 0, WIDTH / 2, HEIGHT / 2};
+    mjrRect figure_viewport3 = {WIDTH - WIDTH / 2, 0, WIDTH / 2, HEIGHT / 2};
 
     // run main rendering loop
     while (!glfwWindowShouldClose(window))
@@ -129,17 +134,23 @@ void render(mjModel *model, mjData *data)
                        { return !ready; });
             // Update simulation data in the copied model and data
             mjv_updateScene(model, data, &opt, NULL, &cam, mjCAT_ALL, &scn);
+
+            // Get GLFW framebuffer viewport size
+            glfwGetFramebufferSize(window, &viewport.width, &viewport.height);
+            // Fix recording_label_viewport position
+            recording_label_viewport.bottom = viewport.height - 30;
+
+            // render the scene
+            mjr_setBuffer(mjFB_OFFSCREEN, &con);
+            mjr_render(figure_viewport0, &scn, &con);
+            mjr_figure(figure_viewport1, time_qpos->get(), &con);
+            mjr_figure(figure_viewport2, time_qpos->get(), &con);
+            mjr_figure(figure_viewport3, time_qpos->get(), &con);
+            mjr_blitBuffer(render_viewport, viewport, 1, 0, &con);
+
             ready = true;
         }
         condv.notify_one();
-
-        // Get GLFW framebuffer viewport size
-        glfwGetFramebufferSize(window, &viewport.width, &viewport.height);
-
-        // render the scene
-        mjr_render(render_viewport, &scn, &con);
-        mjr_figure(figure_viewport, &figure, &con);
-        mjr_blitBuffer(render_viewport, viewport, 1, 0, &con);
 
         // Get rendered OpenGL frame to video frame
         video_frame_mtx.lock();
@@ -151,6 +162,13 @@ void render(mjModel *model, mjData *data)
         video_frame_mtx.unlock();
 
         condvideo.notify_one();
+
+        if (video_record)
+        {
+            // render recording label to screen
+            mjr_setBuffer(mjFB_WINDOW, &con);
+            mjr_label(recording_label_viewport, mjFONT_NORMAL, "Recording...", 1, 1, 0, 1, 1, 0, 0, &con);
+        }
 
         // swap OpenGL buffers
         glfwSwapBuffers(window);
@@ -176,7 +194,8 @@ void render(mjModel *model, mjData *data)
 
 void video_thread()
 {
-
+    if (!video_record)
+        return;
     while (!Exit)
     {
         // Wait for new frame to be available from OpenGL
@@ -203,11 +222,11 @@ int main()
     mjModel *m = mj_loadXML("model/arm2.xml", NULL, NULL, 0);
     mjData *d = mj_makeData(m);
 
+    time_qpos = new graphics::FigureTimeQpos(m, d);
+
     // Saving log to CSV file
     writer = new csv::csv_writer("log_arm2.csv");
-    std::vector<std::string> jnt_names = basic::joint_names(m, d);
-
-    graphics::init_figure(&figure, m, "Time x Joints", jnt_names);
+    std::vector<std::string> jnt_names = mj::joint_names(m, d);
 
     std::vector<std::string> headers;
     headers.push_back("time");
@@ -244,6 +263,8 @@ int main()
     // Cleanup
     mj_deleteData(d);
     mj_deleteModel(m);
+
+    delete time_qpos;
 
     return 0;
 }
