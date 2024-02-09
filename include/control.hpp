@@ -97,11 +97,11 @@ namespace control
             mjtNum dv[2]; // (dva-dvb) * b
 
             // solving for stiffness
-            mju_sub(dp, d->qpos + 2, d->qpos, 2);       // dp = (da-db)
+            mju_sub(dp, d->qpos, d->qpos + 2, 2);       // dp = (da-db)
             mju_scl(dp, dp, m->tendon_stiffness[0], 2); // dp = (da-db) * k
 
             // solving for damping
-            mju_sub(dv, d->qpos + 2, d->qpos, 2);     // dv = (dva-dvb)
+            mju_sub(dv, d->qpos, d->qpos + 2, 2);     // dv = (dva-dvb)
             mju_scl(dv, dv, m->tendon_damping[0], 2); // dv = (dva-dvb) * b
 
             // fi = dp + dv
@@ -118,15 +118,12 @@ namespace control
             {
                 // control offset d->ctrl+4 | ppvv|mm
                 // feedforward
-                mju_fill(d->ctrl + 4, 0.0, 2); // zero torques
                 // robot_arm_torques = human_acc * robot_mass
-                // mju_scl(d->ctrl + 4, d->qacc, 0.5, 2);
+                mju_scl(d->ctrl + 4, d->qacc, 0.5, 2);
             }
 
             // With interaction force offset
-            // mju_copy(variables_to_plot + 2, d->ctrl + 4, 2);
-            // mju_fill(variables_to_plot, 0, 2);
-            // mju_fill(variables_to_plot + 2, 10, 2);
+            mju_copy(variables_to_plot + 2, d->ctrl + 4, 2);
 
             // Print control vector for debugging
             // mju_printMat(d->ctrl, 1, m->nu);
@@ -138,5 +135,6 @@ namespace control
 // install control callback
 // mjfGeneric mjcb_control = control::simple_sin_torques_arm2;
 mjfGeneric mjcb_control = control::interaction_control_arm2;
+// mjfGeneric mjcb_control = nullptr; // No control
 
 #endif // __CONTROL__H_

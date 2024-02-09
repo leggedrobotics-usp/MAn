@@ -27,6 +27,7 @@ SOFTWARE.
 #include <graphics.hpp>
 #include <graphics/time_qpos.hpp>
 #include <graphics/time_interaction_force.hpp>
+#include <graphics/time_feedforward_force.hpp>
 
 std::mutex mu, muvideo;
 std::mutex video_frame_mtx;
@@ -36,10 +37,11 @@ bool Exit = false;
 const bool high_quality_encoding = false;
 bool save_to_csv = true;
 bool show_plot_figure = true;
-bool video_record = false;
+bool video_record = true;
 csv::csv_writer *writer = nullptr;
 graphics::FigureTimeQpos *time_qpos = nullptr;
 graphics::FigureTimeInteractionForce *time_interaction_force = nullptr;
+graphics::FigureTimeFeedForwardForce *time_feedforward_force = nullptr;
 
 // SD
 // #define WIDTH 640
@@ -82,6 +84,7 @@ void runSimulation(mjModel *model, mjData *data)
             {
                 time_qpos->update();
                 time_interaction_force->update();
+                time_feedforward_force->update();
             }
             ready = false;
         }
@@ -148,7 +151,7 @@ void render(mjModel *model, mjData *data)
             mjr_render(figure_viewport0, &scn, &con);
             mjr_figure(figure_viewport1, time_qpos->get(), &con);
             mjr_figure(figure_viewport2, time_interaction_force->get(), &con);
-            mjr_figure(figure_viewport3, time_qpos->get(), &con);
+            mjr_figure(figure_viewport3, time_feedforward_force->get(), &con);
             mjr_blitBuffer(render_viewport, viewport, 1, 0, &con);
 
             ready = true;
@@ -228,6 +231,8 @@ int main()
     time_qpos = new graphics::FigureTimeQpos(m, d);
     time_interaction_force = new graphics::FigureTimeInteractionForce(d, control::variables_to_plot, 0,
                                                                       2, control::variables_to_plot_names);
+    time_feedforward_force = new graphics::FigureTimeFeedForwardForce(d, control::variables_to_plot, 2,
+                                                                      2, control::variables_to_plot_names);
 
     // Saving log to CSV file
     writer = new csv::csv_writer("log_arm2.csv");
@@ -271,6 +276,7 @@ int main()
 
     delete time_qpos;
     delete time_interaction_force;
+    delete time_feedforward_force;
 
     return 0;
 }
