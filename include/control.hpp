@@ -28,6 +28,7 @@ SOFTWARE.
 #include <string>
 #include <vector>
 #include <mujoco/mujoco.h>
+#include <utils/mju.hpp>
 #define MAX_CONTROL_VARIABLES_TO_PLOT 12
 #define CONTROL_VARIABLES_TO_PLOT 4
 namespace control
@@ -98,11 +99,11 @@ namespace control
 
             // solving for stiffness
             mju_sub(dp, d->qpos, d->qpos + 2, 2);       // dp = (da-db)
-            mju_scl(dp, dp, m->tendon_stiffness[0], 2); // dp = (da-db) * k
+            mju::mju_mul(dp, dp, m->tendon_stiffness, 2); // dp = (da-db) * k
 
             // solving for damping
             mju_sub(dv, d->qpos, d->qpos + 2, 2);     // dv = (dva-dvb)
-            mju_scl(dv, dv, m->tendon_damping[0], 2); // dv = (dva-dvb) * b
+            mju::mju_mul(dv, dv, m->tendon_damping, 2); // dv = (dva-dvb) * b
 
             // fi = dp + dv
             // fi = (da-db) * k + (dva-dvb) * b
