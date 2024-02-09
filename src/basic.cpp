@@ -26,6 +26,7 @@ SOFTWARE.
 #include <basic.hpp>
 #include <graphics.hpp>
 #include <graphics/time_qpos.hpp>
+#include <graphics/time_interaction_force.hpp>
 
 std::mutex mu, muvideo;
 std::mutex video_frame_mtx;
@@ -38,6 +39,7 @@ bool show_plot_figure = true;
 bool video_record = false;
 csv::csv_writer *writer = nullptr;
 graphics::FigureTimeQpos *time_qpos = nullptr;
+graphics::FigureTimeInteractionForce *time_interaction_force = nullptr;
 
 // SD
 // #define WIDTH 640
@@ -79,6 +81,7 @@ void runSimulation(mjModel *model, mjData *data)
             if (show_plot_figure)
             {
                 time_qpos->update();
+                time_interaction_force->update();
             }
             ready = false;
         }
@@ -144,7 +147,7 @@ void render(mjModel *model, mjData *data)
             mjr_setBuffer(mjFB_OFFSCREEN, &con);
             mjr_render(figure_viewport0, &scn, &con);
             mjr_figure(figure_viewport1, time_qpos->get(), &con);
-            mjr_figure(figure_viewport2, time_qpos->get(), &con);
+            mjr_figure(figure_viewport2, time_interaction_force->get(), &con);
             mjr_figure(figure_viewport3, time_qpos->get(), &con);
             mjr_blitBuffer(render_viewport, viewport, 1, 0, &con);
 
@@ -223,6 +226,8 @@ int main()
     mjData *d = mj_makeData(m);
 
     time_qpos = new graphics::FigureTimeQpos(m, d);
+    time_interaction_force = new graphics::FigureTimeInteractionForce(d, control::variables_to_plot, 0,
+                                                                      2, control::variables_to_plot_names);
 
     // Saving log to CSV file
     writer = new csv::csv_writer("log_arm2.csv");
@@ -265,6 +270,7 @@ int main()
     mj_deleteModel(m);
 
     delete time_qpos;
+    delete time_interaction_force;
 
     return 0;
 }

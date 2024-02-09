@@ -107,7 +107,7 @@ namespace control
             // fi = dp + dv
             // fi = (da-db) * k + (dva-dvb) * b
             mju_add(fi, dp, dv, 2); // fi = dp + dv
-            // mju_copy(variables_to_plot, fi, 2);
+            mju_copy(variables_to_plot, fi, 2);
 
             if (d->time < 2.0)
             {
