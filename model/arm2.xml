@@ -62,15 +62,18 @@
     <position name="elbow_p_2" joint="elbow_2" ctrlrange="-3.1415 3.1415" kp="30"/>
     <velocity name="shoulder_v_2" joint="shoulder_2" ctrlrange="-3.1415 3.1415" kv="0.9"/>
     <velocity name="elbow_v_2" joint="elbow_2" ctrlrange="-3.1415 3.1415" kv="0.9"/> -->
+
+    <motor name="shoulder_t_2" joint="shoulder_2" ctrlrange="-30 30" forcerange="-30 30"/>
+    <motor name="elbow_t_2" joint="elbow_2" ctrlrange="-30 30" forcerange="-30 30"/>
   </actuator>
 
   <tendon>
-  <spatial name="hshoulder_tendon" stiffness="1300" damping="100" range="0 100" springlength="-1 -1" limited="true" width=".002" rgba=".95 .3 .3 1">
+  <spatial name="hshoulder_tendon" stiffness="130" damping="13" range="0 100" springlength="-1 -1" limited="true" width=".002" rgba=".95 .3 .3 1">
       <site site="hshoulder"/>
       <site site="hshoulder_2"/>
 
     </spatial>
-    <spatial name="helbow_tendon" stiffness="1300" damping="100" range="0 100" springlength="-1 -1" limited="true" width=".002" rgba=".95 .3 .3 1">
+    <spatial name="helbow_tendon" stiffness="130" damping="13" range="0 100" springlength="-1 -1" limited="true" width=".002" rgba=".95 .3 .3 1">
       <site site="helbow"/>
       <site site="helbow_2"/>
     </spatial>
