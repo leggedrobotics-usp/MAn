@@ -68,12 +68,12 @@
   </actuator>
 
   <tendon>
-  <spatial name="hshoulder_tendon" stiffness="130" damping="13" range="0 100" springlength="-1 -1" limited="true" width=".002" rgba=".95 .3 .3 1">
+    <spatial name="hshoulder_tendon" stiffness="100" damping="10" range="0 100" springlength="-1 -1" limited="true" width=".002" rgba=".95 .3 .3 1">
       <site site="hshoulder"/>
       <site site="hshoulder_2"/>
 
     </spatial>
-    <spatial name="helbow_tendon" stiffness="130" damping="13" range="0 100" springlength="-1 -1" limited="true" width=".002" rgba=".95 .3 .3 1">
+    <spatial name="helbow_tendon" stiffness="100" damping="10" range="0 100" springlength="-1 -1" limited="true" width=".002" rgba=".95 .3 .3 1">
       <site site="helbow"/>
       <site site="helbow_2"/>
     </spatial>

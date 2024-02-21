@@ -131,11 +131,78 @@ namespace control
         }
     }
 
+
+    /// @brief Advanced Interaction control for arm2.xml model
+    /// @param m - MuJoCo model pointer
+    /// @param d - MuJoCo data pointer
+    void advanced_interaction_control_arm2(const mjModel *m, mjData *d)
+    {
+        const mjtNum period = 4; // 2 seconds
+        const mjtNum f = 1.0 / period;
+        mjtNum t = d->time;
+
+        
+        static mjtNum Tau = 0;
+        static mjtNum Kp = 100;
+        static mjtNum Kv = 10;
+
+        static mjtNum Tau2 = 0;
+        static mjtNum Kp2 = 10;
+        static mjtNum Kv2 = 1;
+
+
+        // Applying stiffness for position control oscilating
+        if (m->nq == 4)
+        {
+            // Calculating Interaction Force
+            mjtNum fi[2];
+            mjtNum dp[2]; // (da-db) * k
+            mjtNum dv[2]; // (dva-dvb) * b
+
+            // solving for stiffness
+            mju_sub(dp, d->qpos, d->qpos + 2, 2);       // dp = (da-db)
+            mju::mju_mul(dp, dp, m->tendon_stiffness, 2); // dp = (da-db) * k
+
+            // solving for damping
+            mju_sub(dv, d->qpos, d->qpos + 2, 2);     // dv = (dva-dvb)
+            mju::mju_mul(dv, dv, m->tendon_damping, 2); // dv = (dva-dvb) * b
+
+            // fi = dp + dv
+            // fi = (da-db) * k + (dva-dvb) * b
+            mju_add(fi, dp, dv, 2); // fi = dp + dv
+            mju_copy(variables_to_plot, fi, 2);
+            
+
+            d->ctrl[0] = M_PI * sin(t * M_PI * 0.5f*f);
+            d->ctrl[1] = M_PI * sin(t * M_PI * 1.0f*f);
+
+            Tau = Kp*(d->qpos[0] - d->qpos[0+2]) + Kv*(d->qvel[0] - d->qvel[0+2]);
+            Tau2 = Kp2*(d->qpos[1] - d->qpos[1+2]) + Kv2*(d->qvel[1] - d->qvel[1+2]);
+            
+            d->qfrc_applied[0+2] =  Tau - 0.3*d->qacc[0]; //Tau  - 0.25*d->qacc[0]; Jacobiano desde Mujoco? 
+            d->qfrc_applied[1+2] =  Tau2 - 0.1*d->qacc[1]; //Tau2 - 0.1*d->qacc[1];
+
+            //printf("T: %.5f T2: %.5f \n",Tau,Tau2);
+
+            // Print control vector for debugging
+            // mju_printMat(d->ctrl, 1, m->nu);
+
+
+            // Plotting copy
+            // Interaction Force
+            mju_copy(variables_to_plot, fi, 2);
+
+            // Applied Force
+            mju_copy(variables_to_plot + 2, d->qfrc_applied + 2, 2);
+        }
+    }
+
 }
 
 // install control callback
 // mjfGeneric mjcb_control = control::simple_sin_torques_arm2;
-mjfGeneric mjcb_control = control::interaction_control_arm2;
+// mjfGeneric mjcb_control = control::interaction_control_arm2;
+mjfGeneric mjcb_control = control::advanced_interaction_control_arm2;
 // mjfGeneric mjcb_control = nullptr; // No control
 
 #endif // __CONTROL__H_
