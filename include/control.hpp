@@ -25,184 +25,77 @@ SOFTWARE.
 #ifndef __CONTROL__H_
 #define __CONTROL__H_
 
-#include <string>
-#include <vector>
-#include <mujoco/mujoco.h>
-#include <utils/mju.hpp>
-#define MAX_CONTROL_VARIABLES_TO_PLOT 12
-#define CONTROL_VARIABLES_TO_PLOT 4
+#include <control/variables.hpp>
+#include <control/utils.hpp>
+#include <control/simple.hpp>
+#include <control/advanced.hpp>
+
 namespace control
 {
-    mjtNum variables_to_plot[MAX_CONTROL_VARIABLES_TO_PLOT];
-    int n_variables_to_plot = CONTROL_VARIABLES_TO_PLOT;
-    std::vector<std::string> variables_to_plot_names = {"interaction_force_shoulder", "interaction_force_elbow", "robot_torque_shoulder", "robot_torque_elbow"};
 
-    /// @brief Simple sin torque generation for arbitrary number of DoF == actuators
-    /// @param m - MuJoCo model pointer
-    /// @param d - MuJoCo data pointer
-    void simple_sin_torques(const mjModel *m, mjData *d)
+    void prepare_controller_selector()
     {
-        const mjtNum period = 2; // 2 seconds
-        const mjtNum f = 1.0 / period;
-        mjtNum t = d->time;
+        // PREPARATION SECTION
 
-        // Applying stiffness for position control oscilating
-        if (m->nu == m->nq)
-        {
-            // Your control law may come here like this one
-            mju_scl(d->ctrl, d->qpos, M_PI * sin(t * M_PI / f), m->nu);
-        }
+        // After 2 seconds of simulation time, use model_based_feedforward_control_arm2
+        time_barrier.push_back(2);
+        ctrl_functions.push_back(model_based_feedforward_control_arm2);
+        active_control.push_back(false);
+
     }
 
-    /// @brief Simple sin torque generation for arm2.xml model
+    /// @brief Controller selector for arm2.xml model
     /// @param m - MuJoCo model pointer
     /// @param d - MuJoCo data pointer
-    void simple_sin_torques_arm2(const mjModel *m, mjData *d)
+    void controller_selector_arm2(const mjModel *m, mjData *d)
     {
-        const mjtNum period = 2; // 2 seconds
-        const mjtNum f = 1.0 / period;
-        mjtNum t = d->time;
 
-        // Applying stiffness for position control oscilating
-        if (m->nq == 4)
+        // SECTION 0
+        // HUMAN REFERENCE ROUTINES
+
+        // Human ARM (2 DoF)
+        simple_sin_position_arm2(m, d); // just position
+
+        // Interaction Force
+        interaction_force_arm2(m, d, control::fi, 2, 2);
+
+        // SECTION I
+        // ARM ROBOT CONTROLLER ROUTINES
+        // Robot ARM (2 DoF)
+
+        // Check if we have proper sizes
+        assert(time_barrier.size() == ctrl_functions.size() && ctrl_functions.size() == active_control.size());
+
+        // Run proper control
+        for (int ctrlid = 0; ctrlid < ctrl_functions.size(); ++ctrlid)
         {
-            // Your control law may come here like this one
-            mju_fill(d->ctrl, M_PI * sin(t * M_PI * f), 2); // Just position
-
-            // Print control vector for debugging
-            // mju_printMat(d->ctrl, 1, m->nu);
-        }
-    }
-
-    /// @brief Interaction control for arm2.xml model
-    /// @param m - MuJoCo model pointer
-    /// @param d - MuJoCo data pointer
-    void interaction_control_arm2(const mjModel *m, mjData *d)
-    {
-        const mjtNum period = 2; // 2 seconds
-        const mjtNum f = 1.0 / period;
-        mjtNum t = d->time;
-
-        // Applying stiffness for position control oscilating
-        if (m->nq == 4)
-        {
-
-            // Human ARM (2 DoF)
-            mju_fill(d->ctrl, M_PI * sin(t * M_PI * f), 2); // Just position
-
-            // Robot ARM (2 DoF)
-
-            // Calculating Interaction Force
-            mjtNum fi[2];
-            mjtNum dp[2]; // (da-db) * k
-            mjtNum dv[2]; // (dva-dvb) * b
-
-            // solving for stiffness
-            mju_sub(dp, d->qpos, d->qpos + 2, 2);       // dp = (da-db)
-            mju::mju_mul(dp, dp, m->tendon_stiffness, 2); // dp = (da-db) * k
-
-            // solving for damping
-            // mju_sub(dv, d->qpos, d->qpos + 2, 2);     // dv = (dva-dvb)
-            // mju::mju_mul(dv, dv, m->tendon_damping, 2); // dv = (dva-dvb) * b
-
-            // fi = dp + dv
-            // fi = (da-db) * k + (dva-dvb) * b
-            mju_add(fi, dp, dv, 2); // fi = dp + dv
-            mju_copy(variables_to_plot, fi, 2);
-
-            if (d->time < 2.0)
+            if (d->time >= time_barrier[ctrlid])
             {
-                // do nothing in Robot ARM
-                mju_fill(d->ctrl + 4, 0.0, 2); // zero torques
+                if (active_control[ctrlid] == false)
+                {
+                    printf("Activating control with id: %d\n", ctrlid);
+                    active_control[ctrlid] = true;
+                }
+                ctrl_functions[ctrlid](m, d);
+                break; // avoid using more than one controller
             }
-            else
-            {
-                // control offset d->ctrl+4 | ppvv|mm
-                // feedforward
-                // robot_arm_torques = human_acc * robot_mass
-                mju_scl(d->ctrl + 4, d->qacc, 0.5, 2);
-            }
-
-            // With interaction force offset
-            mju_copy(variables_to_plot + 2, d->ctrl + 4, 2);
-
-            // Print control vector for debugging
-            // mju_printMat(d->ctrl, 1, m->nu);
         }
-    }
 
+        // SECTION II
+        // PLOTTING ROUTINES
 
-    /// @brief Advanced Interaction control for arm2.xml model
-    /// @param m - MuJoCo model pointer
-    /// @param d - MuJoCo data pointer
-    void advanced_interaction_control_arm2(const mjModel *m, mjData *d)
-    {
-        const mjtNum period = 4; // 2 seconds
-        const mjtNum f = 1.0 / period;
-        mjtNum t = d->time;
+        // Interaction Force
+        mju_copy(variables_to_plot, fi, 2);
 
-        
-        static mjtNum Tau = 0;
-        static mjtNum Kp = 100;
-        static mjtNum Kv = 10;
-
-        static mjtNum Tau2 = 0;
-        static mjtNum Kp2 = 10;
-        static mjtNum Kv2 = 1;
-
-
-        // Applying stiffness for position control oscilating
-        if (m->nq == 4)
-        {
-            // Calculating Interaction Force
-            mjtNum fi[2];
-            mjtNum dp[2]; // (da-db) * k
-            mjtNum dv[2]; // (dva-dvb) * b
-
-            // solving for stiffness
-            mju_sub(dp, d->qpos, d->qpos + 2, 2);       // dp = (da-db)
-            mju::mju_mul(dp, dp, m->tendon_stiffness, 2); // dp = (da-db) * k
-
-            // solving for damping
-            mju_sub(dv, d->qpos, d->qpos + 2, 2);     // dv = (dva-dvb)
-            mju::mju_mul(dv, dv, m->tendon_damping, 2); // dv = (dva-dvb) * b
-
-            // fi = dp + dv
-            // fi = (da-db) * k + (dva-dvb) * b
-            mju_add(fi, dp, dv, 2); // fi = dp + dv
-            mju_copy(variables_to_plot, fi, 2);
-            
-
-            d->ctrl[0] = M_PI * sin(t * M_PI * 0.5f*f);
-            d->ctrl[1] = M_PI * sin(t * M_PI * 1.0f*f);
-
-            Tau = Kp*(d->qpos[0] - d->qpos[0+2]) + Kv*(d->qvel[0] - d->qvel[0+2]);
-            Tau2 = Kp2*(d->qpos[1] - d->qpos[1+2]) + Kv2*(d->qvel[1] - d->qvel[1+2]);
-            
-            d->qfrc_applied[0+2] =  Tau - 0.3*d->qacc[0]; //Tau  - 0.25*d->qacc[0]; Jacobiano desde Mujoco? 
-            d->qfrc_applied[1+2] =  Tau2 - 0.1*d->qacc[1]; //Tau2 - 0.1*d->qacc[1];
-
-            //printf("T: %.5f T2: %.5f \n",Tau,Tau2);
-
-            // Print control vector for debugging
-            // mju_printMat(d->ctrl, 1, m->nu);
-
-
-            // Plotting copy
-            // Interaction Force
-            mju_copy(variables_to_plot, fi, 2);
-
-            // Applied Force
-            mju_copy(variables_to_plot + 2, d->qfrc_applied + 2, 2);
-        }
+        // Applied torques
+        mju_copy(variables_to_plot + 2, d->ctrl + 4, 2);
     }
 
 }
 
 // install control callback
 // mjfGeneric mjcb_control = control::simple_sin_torques_arm2;
-// mjfGeneric mjcb_control = control::interaction_control_arm2;
-mjfGeneric mjcb_control = control::advanced_interaction_control_arm2;
+mjfGeneric mjcb_control = control::controller_selector_arm2;
 // mjfGeneric mjcb_control = nullptr; // No control
 
 #endif // __CONTROL__H_
