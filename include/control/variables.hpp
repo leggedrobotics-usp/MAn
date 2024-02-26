@@ -34,7 +34,7 @@ SOFTWARE.
 #define CONTROL_VARIABLES_TO_PLOT 4
 
 namespace control
-{   
+{
     // Plotting variables
     mjtNum variables_to_plot[MAX_CONTROL_VARIABLES_TO_PLOT];
     int n_variables_to_plot = CONTROL_VARIABLES_TO_PLOT;
@@ -44,7 +44,7 @@ namespace control
     std::vector<double> time_barrier;
     std::vector<bool> active_control;
     std::vector<mjfGeneric> ctrl_functions;
-
+    std::vector<std::string> ctrl_names;
 
     // Controller variables
     static mjtNum fi[2];             // current force interaction

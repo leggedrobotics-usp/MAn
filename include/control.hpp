@@ -37,11 +37,22 @@ namespace control
     {
         // PREPARATION SECTION
 
-        // After 2 seconds of simulation time, use model_based_feedforward_control_arm2
-        time_barrier.push_back(2);
+        double time = 0;
+        double duration = 2;
+
+        // After last time + duration seconds of simulation time, use model_based_feedforward_control_arm2
+        time += duration;
+        time_barrier.push_back(time);
+        ctrl_names.push_back("model_based_feedforward_control_arm2");
         ctrl_functions.push_back(model_based_feedforward_control_arm2);
         active_control.push_back(false);
 
+        // After last time + duration seconds of simulation time, use model_based_feedforward_control_arm2
+        time += duration;
+        time_barrier.push_back(time);
+        ctrl_names.push_back("interaction_force_feedback_control_arm2");
+        ctrl_functions.push_back(interaction_force_feedback_control_arm2);
+        active_control.push_back(false);
     }
 
     /// @brief Controller selector for arm2.xml model
@@ -67,18 +78,24 @@ namespace control
         assert(time_barrier.size() == ctrl_functions.size() && ctrl_functions.size() == active_control.size());
 
         // Run proper control
+        int selected_ctrlid = -1;
         for (int ctrlid = 0; ctrlid < ctrl_functions.size(); ++ctrlid)
         {
             if (d->time >= time_barrier[ctrlid])
             {
-                if (active_control[ctrlid] == false)
-                {
-                    printf("Activating control with id: %d\n", ctrlid);
-                    active_control[ctrlid] = true;
-                }
-                ctrl_functions[ctrlid](m, d);
-                break; // avoid using more than one controller
+                selected_ctrlid = ctrlid;
             }
+        }
+
+        // If any controller is seleted, then
+        if (selected_ctrlid > -1)
+        {
+            if (active_control[selected_ctrlid] == false)
+            {
+                printf("Activating control %s\n", ctrl_names[selected_ctrlid].c_str());
+                active_control[selected_ctrlid] = true;
+            }
+            ctrl_functions[selected_ctrlid](m, d);
         }
 
         // SECTION II

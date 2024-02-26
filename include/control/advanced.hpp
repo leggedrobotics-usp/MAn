@@ -42,10 +42,10 @@ namespace control
         feedforward(m, d, d->ctrl + 4, 2, 2);
     }
 
-    /// @brief Interaction control for arm2.xml model
+    /// @brief Interaction force feedback control for arm2.xml model
     /// @param m - MuJoCo model pointer
     /// @param d - MuJoCo data pointer
-    void interaction_control_arm2(const mjModel *m, mjData *d)
+    void interaction_force_feedback_control_arm2(const mjModel *m, mjData *d)
     {
         mjtNum mass[2] = {0.3, 0.1};
 
@@ -55,12 +55,8 @@ namespace control
 
             // Robot ARM (2 DoF)
 
-            // Calculating Interaction Force
-            interaction_force_arm2(m, d, control::fi, 2, 2);
-            mju_copy(variables_to_plot, fi, 2);
-
-            // Calculate dfi
-            mju_sub(dfi, fi, last_fi, 2);                // dfi = fi - last_fi
+            // Calculate dfi - we assume fi is already being calculated
+            mju_sub(dfi, control::fi, control::last_fi, 2);                // dfi = fi - last_fi
             mju_scl(dfi, dfi, 1.0 / m->opt.timestep, 2); // dfi = (fi - last_fi)/dt
 
             if (d->time < 2.0)
@@ -76,12 +72,9 @@ namespace control
                 // mju_scl(d->ctrl + 4, d->qacc, 0.5, 2);
             }
 
-            // With interaction force offset
-            mju_copy(variables_to_plot + 2, d->ctrl + 4, 2);
-
             // Copy current force interaction to last force interaction
-            // To be used in force inte
-            mju_copy(last_fi, fi, 2);
+            // To be used in force interaction
+            mju_copy(control::last_fi, control::fi, 2);
 
             // Print control vector for debugging
             // mju_printMat(d->ctrl, 1, m->nu);
