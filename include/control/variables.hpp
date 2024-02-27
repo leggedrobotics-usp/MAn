@@ -37,7 +37,7 @@ namespace control
 {
     // Plotting variables
     mjtNum variables_to_plot[MAX_CONTROL_VARIABLES_TO_PLOT];
-    int n_variables_to_plot = CONTROL_VARIABLES_TO_PLOT;
+    const int n_variables_to_plot = CONTROL_VARIABLES_TO_PLOT;
     std::vector<std::string> variables_to_plot_names = {"interaction_force_shoulder", "interaction_force_elbow", "robot_torque_shoulder", "robot_torque_elbow"};
 
     // Controller Selector variables
@@ -46,12 +46,15 @@ namespace control
     std::vector<mjfGeneric> ctrl_functions;
     std::vector<std::string> ctrl_names;
 
-    // Controller variables
-    static mjtNum fi[2];             // current force interaction
-    static mjtNum last_fi[2];        // last force interaction
-    static mjtNum dfi[2];            // interaction force derivative
-    static mjtNum kp[2] = {100, 10}; // kp
-    static mjtNum kd[2] = {10, 1};   // kd
+    // Shared Controller Variables
+    static mjtNum fr[2];   // force exerted by the robot
+    static mjtNum fi[2];   // current force interaction
+    static mjtNum dfi[2];  // interaction force first derivative
+    static mjtNum ffwd[2]; // feedforward
+    static mjtNum ka[2];   // ka
+    static mjtNum kp[2];   // kp
+    static mjtNum kd[2];   // kd
+    static mjtNum ki[2];   // ki
 }
 
 #endif // __CONTROL_VARIABLES__H_

@@ -25,6 +25,10 @@ SOFTWARE.
 #ifndef __CONTROL__H_
 #define __CONTROL__H_
 
+// Just to include control refenreces used in this code
+#include <control/references.hpp>
+
+// Implementation of the controllers
 #include <control/variables.hpp>
 #include <control/utils.hpp>
 #include <control/simple.hpp>
@@ -47,12 +51,20 @@ namespace control
         ctrl_functions.push_back(model_based_feedforward_control_arm2);
         active_control.push_back(false);
 
-        // After last time + duration seconds of simulation time, use model_based_feedforward_control_arm2
+        // After last time + duration seconds of simulation time, use interaction_force_feedback_control_arm2
         time += duration;
         time_barrier.push_back(time);
         ctrl_names.push_back("interaction_force_feedback_control_arm2");
         ctrl_functions.push_back(interaction_force_feedback_control_arm2);
         active_control.push_back(false);
+
+        // After last time + duration seconds of simulation time, use acceleration_feedback_control_arm2
+        time += duration;
+        time_barrier.push_back(time);
+        ctrl_names.push_back("acceleration_feedback_control_arm2");
+        ctrl_functions.push_back(acceleration_feedback_control_arm2);
+        active_control.push_back(false);
+
     }
 
     /// @brief Controller selector for arm2.xml model

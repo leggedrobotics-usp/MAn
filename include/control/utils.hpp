@@ -30,17 +30,17 @@ SOFTWARE.
 namespace control
 {
     /***********************************************************************************
-     *                     ADVANCED CONTROLLERS UTILITY FUNCTIONS                       *
+     *                     ADVANCED CONTROLLERS UTILITY FUNCTIONS                      *
      ***********************************************************************************/
 
     /// @brief Calculate the Model-based feedforward force for generalized arm2.xml model
     /// @param m - MuJoCo model pointer
     /// @param d - MuJoCo data pointer
     /// @param ffwd - feedfordward force (resulting)
-    /// @param n - degrees of freedom
     /// @param offset - robot mass offset
+    /// @param n - degrees of freedom
     /// @param inertia_type - inertia type: 0 - mass | 1 - inertia
-    void feedforward(const mjModel *m, mjData *d, mjtNum *ffwd, int n, int offset, int inertia_type = 0)
+    void feedforward(const mjModel *m, mjData *d, mjtNum *ffwd, int offset, int n, int inertia_type = 0)
     {
         // Please use one or the other:
 
@@ -64,31 +64,28 @@ namespace control
     /// @param m - MuJoCo model pointer
     /// @param d - MuJoCo data pointer
     /// @param fi - force of interaction (resulting)
-    /// @param n - degrees of freedom
     /// @param offset - robot joints offset
-    void interaction_force_arm2(const mjModel *m, mjData *d, mjtNum *fi, int n, int offset)
+    /// @param n - degrees of freedom
+    void interaction_force_arm2(const mjModel *m, mjData *d, mjtNum *fi, int offset, int n)
     {
-        mjtNum tmp[n];      // temporary variable
-        mju_fill(fi, 0, n); // Filling fi with zeros
+        // Calculate fi using an integral version of eq. 9 from ref. [1]
+        mju_copy(control::ka, m->tendon_stiffness, 2);          // setting ka = tendon stiffness
+        mju_sub(control::fi, d->qpos + offset, d->qpos, n);     // temporarily: (x_r - x_h)
+        mju::mju_mul(control::fi, control::fi, control::ka, n); // fi = ka * (x_r - x_h)
+    }
 
-        if (kp != nullptr)
-        {
-            // solving for stiffness
-            mju_sub(tmp, d->qpos + offset, d->qpos, n);     // (q_r - q_h)
-            mju::mju_mul(tmp, tmp, m->tendon_stiffness, n); // kp * (q_r - q_h)
-            mju_add(fi, fi, tmp, n);                        // fi = kp * (q_r - q_h)
-        }
-
-        if (kd != nullptr)
-        {
-            // solving for damping
-            mju_sub(tmp, d->qvel + offset, d->qvel, n);   // (dq_r - dq_h)
-            mju::mju_mul(tmp, tmp, m->tendon_damping, n); // kd * (dq_r - dq_h)
-            mju_add(fi, fi, tmp, n);                      // fi = kp * (q_r - q_h) + kd * (dq_r - dq_h)
-        }
-
-        // Full formula
-        // fi = kp * (q_r - q_h) + kd * (dq_r - dq_h)
+    /// @brief Calculate the first derivative of interaction force for arm2.xml model
+    /// @param m - MuJoCo model pointer
+    /// @param d - MuJoCo data pointer
+    /// @param dfi - first derivative for force of interaction (resulting)
+    /// @param offset - robot joints offset
+    /// @param n - degrees of freedom
+    void derivative_interaction_force_arm2(const mjModel *m, mjData *d, mjtNum *dfi, int offset, int n)
+    {
+        // Calculate dfi using eq. 9 from ref. [1]
+        mju_sub(dfi, d->qvel + offset, d->qvel, n);    // temporarily: dfi = dx_r - dx_h
+        mju_copy(control::ka, m->tendon_stiffness, n); // setting ka = tendon stiffness
+        mju::mju_mul(dfi, dfi, control::ka, n);        // dfi = ka * (dx_r - dx_h)
     }
 }
 

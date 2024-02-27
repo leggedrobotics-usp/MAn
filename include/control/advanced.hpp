@@ -31,7 +31,7 @@ SOFTWARE.
 namespace control
 {
     /***********************************************************************************
-     *                          ADVANCED CONTROLLERS FUNCTIONS                          *
+     *                          ADVANCED CONTROLLERS FUNCTIONS                         *
      ***********************************************************************************/
 
     /// @brief Model-based feedforward control for arm2.xml model
@@ -39,7 +39,11 @@ namespace control
     /// @param d - MuJoCo data pointer
     void model_based_feedforward_control_arm2(const mjModel *m, mjData *d)
     {
-        feedforward(m, d, d->ctrl + 4, 2, 2);
+        // Calculate feedforward (ffwd) | frff from eq. 5 in ref. [1]
+        feedforward(m, d, control::ffwd, 2, 2);
+
+        // Set control with feedforward
+        mju_copy(d->ctrl + 4, control::ffwd, 2);
     }
 
     /// @brief Interaction force feedback control for arm2.xml model
@@ -47,38 +51,75 @@ namespace control
     /// @param d - MuJoCo data pointer
     void interaction_force_feedback_control_arm2(const mjModel *m, mjData *d)
     {
-        mjtNum mass[2] = {0.3, 0.1};
 
-        // Applying stiffness for position control oscilating
-        if (m->nq == 4)
-        {
+        mjtNum tmp[2];
+        mjtNum kp[2] = {100, 100};
+        mjtNum kd[2] = {10, 10};
 
-            // Robot ARM (2 DoF)
+        // Use tendon values
+        mju_copy(kp, m->tendon_stiffness, 2);
+        mju_copy(kd, m->tendon_damping, 2);
 
-            // Calculate dfi - we assume fi is already being calculated
-            mju_sub(dfi, control::fi, control::last_fi, 2);                // dfi = fi - last_fi
-            mju_scl(dfi, dfi, 1.0 / m->opt.timestep, 2); // dfi = (fi - last_fi)/dt
+        // Calculate feedforward (ffwd) | frff from eq. 5 in ref. [1]
+        feedforward(m, d, control::ffwd, 2, 2);
 
-            if (d->time < 2.0)
-            {
-                // do nothing in Robot ARM
-                mju_fill(d->ctrl + 4, 0.0, 2); // zero torques
-            }
-            else
-            {
-                // control offset d->ctrl+4 | ppvv|mm
-                // feedforward
-                // robot_arm_torques = human_acc * robot_mass
-                // mju_scl(d->ctrl + 4, d->qacc, 0.5, 2);
-            }
+        // Set fr = ffwd
+        mju_copy(control::fr, control::ffwd, 2);
 
-            // Copy current force interaction to last force interaction
-            // To be used in force interaction
-            mju_copy(control::last_fi, control::fi, 2);
+        // Calculate fi
+        interaction_force_arm2(m, d, control::fi, 2, 2);
 
-            // Print control vector for debugging
-            // mju_printMat(d->ctrl, 1, m->nu);
-        }
+        // Calculate dfi
+        derivative_interaction_force_arm2(m, d, control::dfi, 2, 2);
+
+        // Calculate fr = ffwd + (kp * fi)
+        mju_copy(control::kp, kp, 2);
+        mju::mju_mul(tmp, control::kp, control::fi, 2);
+        mju_add(control::fr, control::fr, tmp, 2);
+
+        // Calculate fr = ffwd + (kp * fi) + (kd * dfi)
+        mju_copy(control::kd, kd, 2);
+        mju::mju_mul(tmp, control::kd, control::fi, 2);
+        mju_add(control::fr, control::fr, tmp, 2);
+
+        // Set control with fr = ffwd + (kp * fi) + (kd * dfi)
+        mju_copy(d->ctrl + 4, control::fr, 2);
+    }
+
+    /// @brief Acceleration Feedback Control for arm2.xml model
+    /// @param m - MuJoCo model pointer
+    /// @param d - MuJoCo data pointer
+    void acceleration_feedback_control_arm2(const mjModel *m, mjData *d)
+    {
+
+        mjtNum tmp[2];
+        mjtNum kp[2] = {100, 100};
+        mjtNum ki[2] = {10, 10};
+
+        // Use tendon values
+        mju_copy(kp, m->tendon_damping, 2);
+        mju_copy(ki, m->tendon_stiffness, 2);
+
+        // Calculate feedforward (ffwd) | frff from eq. 5 in ref. [1]
+        feedforward(m, d, control::ffwd, 2, 2);
+
+        // Set fr = ffwd
+        mju_copy(control::fr, control::ffwd, 2);
+
+        // Calculate fr = ffwd + kp * (ddq_h - ddq_r)
+        mju_copy(control::kp, kp, 2);
+        mju_sub(tmp, d->qacc + 2, d->qacc, 2); // (ddq_h - ddq_r)
+        mju::mju_mul(tmp, control::kp, tmp, 2);
+        mju_add(control::fr, control::fr, tmp, 2);
+
+        // Calculate fr = ffwd + kp * (ddq_h - ddq_r) + ki * (dq_h - dq_r)
+        mju_copy(control::ki, ki, 2);
+        mju_sub(tmp, d->qvel + 2, d->qvel, 2); // (dq_h - dq_r)
+        mju::mju_mul(tmp, control::ki, tmp, 2);
+        mju_add(control::fr, control::fr, tmp, 2);
+
+        // Set control with fr = ffwd + kp * (ddq_h - ddq_r) + ki * (dq_h - dq_r)
+        mju_copy(d->ctrl + 4, control::fr, 2);
     }
 
     /// @brief Advanced Interaction control for arm2.xml model

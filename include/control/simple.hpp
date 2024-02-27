@@ -31,7 +31,7 @@ SOFTWARE.
 namespace control
 {
     /***********************************************************************************
-     *                                SIMPLE CONTROLLERS                                *
+     *                                SIMPLE CONTROLLERS                               *
      ***********************************************************************************/
 
     /// @brief Simple sin position controller for arbitrary number of DoF == actuators
