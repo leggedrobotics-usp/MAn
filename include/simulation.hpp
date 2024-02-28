@@ -22,34 +22,43 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#ifndef __BASIC__H_
-#define __BASIC__H_
+#ifndef __SIMULATION__H_
+#define __SIMULATION__H_
 
-#include <thread>
-#include <mutex>
-#include <condition_variable>
-#include <cassert>
-#include <GLFW/glfw3.h>
-#include <mujoco/mujoco.h>
-#include <csv/csv.hpp>
-#ifdef USE_OPENCV
-#include <opencv4/opencv2/opencv.hpp>
-#endif
+#include <basic.hpp>
 
-#include <graphics.hpp>
-#include <graphics/time_qpos.hpp>
-#include <graphics/time_interaction_force.hpp>
-#include <graphics/time_feedforward_force.hpp>
+namespace simulation
+{
+    void init()
+    {
+    }
 
-bool Exit = false;
-const bool high_quality_encoding = false;
-const bool high_quality_rendering = false;
-bool save_to_csv = true;
-bool show_plot_figure = true;
-bool video_record = false;
-csv::csv_writer *writer = nullptr;
-std::vector<graphics::Figure*> figures;
-double end_time = 20.0; // Change this value
-// double end_time = std::numeric_limits<double>::max(); // Use this for undefined time
+    void step(mjModel *model, mjData *data)
+    {
+        // Simulation step
+        mj_step(model, data);
+        // if (save_to_csv && writer)
+        // {
+        //     writer->append(data->time);
+        //     writer->append(data->qpos, model->nq);
+        // }
+        if (show_plot_figure)
+        {
+            for (graphics::Figure *f : figures)
+            {
+                if (f)
+                    f->update();
+            }
+        }
+    }
 
-#endif // __BASIC__H_
+    void finish(mjModel *m, mjData *d)
+    {
+        // Cleanup
+        mj_deleteData(d);
+        mj_deleteModel(m);
+        printf("FINISHED SIMULATION\n");
+    }
+}
+
+#endif // __SIMULATION__H_
