@@ -135,7 +135,7 @@ namespace render
         current_time = std::chrono::steady_clock::now();
     }
 
-    void render_fps()
+    void render_fps(mjModel *m)
     {
         // Get time difference
         current_time = std::chrono::steady_clock::now();
@@ -144,12 +144,17 @@ namespace render
 
         // Get compensated FPS value
         int instant_fps = static_cast<int>(1.0 / diff.count());
-        int compensated_fps = static_cast<int>(last_fps*0.9 + instant_fps*0.1);
+        int compensated_fps = static_cast<int>(last_fps * 0.9 + instant_fps * 0.1);
         last_fps = compensated_fps;
+
+        // Get Real-Time Factor
+        double rtf = static_cast<double>(compensated_fps)/(1.0/m->opt.timestep);
 
         // Prepare text to render
         std::stringstream ss;
-        ss << "fps: " << compensated_fps;
+
+        // Frames Per Second and Real-Time Factor
+        ss << "fps: " << compensated_fps << "(rtf: " << std::setprecision(3) << rtf << ")";
 
         // Render FPS text on window buffer
         mjr_setBuffer(mjFB_WINDOW, &r.con);
@@ -197,7 +202,7 @@ namespace render
 
         if (show_fps)
         {
-            render_fps();
+            render_fps(model);
         }
 
         // swap OpenGL buffers
