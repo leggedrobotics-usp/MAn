@@ -45,6 +45,7 @@ bool Exit = false;
 const bool high_quality_encoding = false;
 const bool high_quality_rendering = false;
 bool save_to_csv = true;
+bool show_fps = true;
 bool show_plot_figure = true;
 bool video_record = false;
 csv::csv_writer *writer = nullptr;

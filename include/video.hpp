@@ -61,7 +61,7 @@ namespace video
 
     void step()
     {
-        if (!video_record)
+        if (!video_record || Exit)
             return;
 #ifdef USE_OPENCV
         // Convert data | This should be better done in GPU... Maybe using FFMPEG/libavfilter

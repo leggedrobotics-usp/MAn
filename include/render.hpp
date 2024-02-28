@@ -28,6 +28,7 @@ SOFTWARE.
 #include <string>
 #include <cstring>
 #include <vector>
+#include <chrono>
 #include <mujoco/mujoco.h>
 #include <video.hpp>
 
@@ -68,10 +69,15 @@ namespace render
     mjrRect render_viewport;
     mjrRect viewport;
     mjrRect recording_label_viewport;
+    mjrRect fps_label_viewport;
     mjrRect figure_viewport0;
     mjrRect figure_viewport1;
     mjrRect figure_viewport2;
     mjrRect figure_viewport3;
+
+    std::chrono::steady_clock::time_point last_time, current_time;
+
+    int last_fps = 0;
 
     GLFWwindow *window = nullptr;
 
@@ -120,11 +126,34 @@ namespace render
         mj_resizeRender(&r, &render_viewport);
 
         viewport = {0, 0, 0, 0};
-        recording_label_viewport = {0, RENDER_HEIGHT - 30, 120, 30};
+        recording_label_viewport = {0, WINDOW_HEIGHT - 30, 120, 30};
+        fps_label_viewport = {0, 0, 80, 30};
         figure_viewport0 = {0, RENDER_HEIGHT - RENDER_HEIGHT / 2, RENDER_WIDTH / 2, RENDER_HEIGHT / 2};
         figure_viewport1 = {RENDER_WIDTH - RENDER_WIDTH / 2, RENDER_HEIGHT - RENDER_HEIGHT / 2, RENDER_WIDTH / 2, RENDER_HEIGHT / 2};
         figure_viewport2 = {0, 0, RENDER_WIDTH / 2, RENDER_HEIGHT / 2};
         figure_viewport3 = {RENDER_WIDTH - RENDER_WIDTH / 2, 0, RENDER_WIDTH / 2, RENDER_HEIGHT / 2};
+        current_time = std::chrono::steady_clock::now();
+    }
+
+    void render_fps()
+    {
+        // Get time difference
+        current_time = std::chrono::steady_clock::now();
+        std::chrono::duration<double> diff = current_time - last_time;
+        last_time = current_time;
+
+        // Get compensated FPS value
+        int instant_fps = static_cast<int>(1.0 / diff.count());
+        int compensated_fps = static_cast<int>(last_fps*0.9 + instant_fps*0.1);
+        last_fps = compensated_fps;
+
+        // Prepare text to render
+        std::stringstream ss;
+        ss << "fps: " << compensated_fps;
+
+        // Render FPS text on window buffer
+        mjr_setBuffer(mjFB_WINDOW, &r.con);
+        mjr_label(fps_label_viewport, mjFONT_NORMAL, ss.str().c_str(), 0, 0, 0, 0, 1, 1, 1, &r.con);
     }
 
     void step(mjModel *model, mjData *data)
@@ -142,7 +171,7 @@ namespace render
             // Get GLFW framebuffer viewport size
             glfwGetFramebufferSize(window, &viewport.width, &viewport.height);
             // Fix recording_label_viewport position
-            recording_label_viewport.bottom = r.view.height - 30;
+            recording_label_viewport.bottom = viewport.height - 30;
 
             // render the scene
             mjr_setBuffer(mjFB_OFFSCREEN, &r.con);
@@ -164,6 +193,11 @@ namespace render
             // render recording label to screen
             mjr_setBuffer(mjFB_WINDOW, &r.con);
             mjr_label(recording_label_viewport, mjFONT_NORMAL, "Recording...", 1, 1, 0, 1, 1, 0, 0, &r.con);
+        }
+
+        if (show_fps)
+        {
+            render_fps();
         }
 
         // swap OpenGL buffers
