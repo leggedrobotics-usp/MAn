@@ -52,7 +52,7 @@ namespace control
         else if (inertia_type == 1)
         {
             // Inertia
-            mju::mju_mul(ffwd, m->dof_M0 + offset, d->qacc, n); // ffwd = M_r * ddq_h
+            mju::mju_mul(ffwd, d->qM + offset, d->qacc, n); // ffwd = M_r * ddq_h
         }
         else
         {
