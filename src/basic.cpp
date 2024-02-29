@@ -30,7 +30,7 @@ SOFTWARE.
 int main()
 {
     // preparing controller selector
-    // control::prepare_controller_selector();
+    control::prepare_controller_selector();
 
     // Load original model and data
     mjModel *m = mj_loadXML("model/arm2.xml", NULL, NULL, 0);

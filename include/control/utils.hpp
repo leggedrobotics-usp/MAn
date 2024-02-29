@@ -68,10 +68,8 @@ namespace control
     /// @param n - degrees of freedom
     void interaction_force_arm2(const mjModel *m, mjData *d, mjtNum *fi, int offset, int n)
     {
-        // Calculate fi using an integral version of eq. 9 from ref. [1]
-        mju_copy(control::ka, m->tendon_stiffness, 2);          // setting ka = tendon stiffness
-        mju_sub(control::fi, d->qpos + offset, d->qpos, n);     // temporarily: (x_r - x_h)
-        mju::mju_mul(control::fi, control::fi, control::ka, n); // fi = ka * (x_r - x_h)
+        // Just copy spring force from MuJoCo
+        mju_copy(fi, d->qfrc_spring + 2, 2);
     }
 
     /// @brief Calculate the first derivative of interaction force for arm2.xml model
@@ -83,9 +81,9 @@ namespace control
     void derivative_interaction_force_arm2(const mjModel *m, mjData *d, mjtNum *dfi, int offset, int n)
     {
         // Calculate dfi using eq. 9 from ref. [1]
-        mju_sub(dfi, d->qvel + offset, d->qvel, n);    // temporarily: dfi = dx_r - dx_h
         mju_copy(control::ka, m->tendon_stiffness, n); // setting ka = tendon stiffness
-        mju::mju_mul(dfi, dfi, control::ka, n);        // dfi = ka * (dx_r - dx_h)
+        mju_sub(dfi, d->qvel + offset, d->qvel, n);    // temporarily: dfi = dq_r - dq_h
+        mju::mju_mul(dfi, dfi, control::ka, n);        // dfi = ka * (dq_r - dq_h)
     }
 }
 

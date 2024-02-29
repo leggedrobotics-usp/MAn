@@ -36,6 +36,16 @@ SOFTWARE.
 #include <opencv4/opencv2/opencv.hpp>
 #endif
 
+std::string controller_name = "No controller";
+namespace control
+{
+
+    void set_controller_name(std::string &ctrl_name)
+    {
+        controller_name = ctrl_name;
+    }
+
+}
 #include <graphics.hpp>
 #include <graphics/time_qpos.hpp>
 #include <graphics/time_interaction_force.hpp>
@@ -47,10 +57,10 @@ const bool high_quality_rendering = false;
 bool save_to_csv = true;
 bool show_fps = true;
 bool show_plot_figure = true;
+bool show_controller_name = true;
 bool video_record = false;
 csv::csv_writer *writer = nullptr;
-std::vector<graphics::Figure*> figures;
+std::vector<graphics::Figure *> figures;
 double end_time = 20.0; // Change this value
 // double end_time = std::numeric_limits<double>::max(); // Use this for undefined time
-
 #endif // __BASIC__H_

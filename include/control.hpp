@@ -25,6 +25,7 @@ SOFTWARE.
 #ifndef __CONTROL__H_
 #define __CONTROL__H_
 
+#include <basic.hpp>
 // Just to include control refenreces used in this code
 #include <control/references.hpp>
 
@@ -47,21 +48,21 @@ namespace control
         // After last time + duration seconds of simulation time, use model_based_feedforward_control_arm2
         time += duration;
         time_barrier.push_back(time);
-        ctrl_names.push_back("model_based_feedforward_control_arm2");
+        ctrl_names.push_back("Model-based Feedforward");
         ctrl_functions.push_back(model_based_feedforward_control_arm2);
         active_control.push_back(false);
 
         // After last time + duration seconds of simulation time, use interaction_force_feedback_control_arm2
         time += duration;
         time_barrier.push_back(time);
-        ctrl_names.push_back("interaction_force_feedback_control_arm2");
+        ctrl_names.push_back("Interaction Force Feedback");
         ctrl_functions.push_back(interaction_force_feedback_control_arm2);
         active_control.push_back(false);
 
         // After last time + duration seconds of simulation time, use acceleration_feedback_control_arm2
         time += duration;
         time_barrier.push_back(time);
-        ctrl_names.push_back("acceleration_feedback_control_arm2");
+        ctrl_names.push_back("Acceleration Feedback");
         ctrl_functions.push_back(acceleration_feedback_control_arm2);
         active_control.push_back(false);
 
@@ -79,8 +80,7 @@ namespace control
         // Human ARM (2 DoF)
         simple_sin_position_arm2(m, d); // just position
 
-        // Interaction Force
-        interaction_force_arm2(m, d, control::fi, 2, 2);
+        
 
         // SECTION I
         // ARM ROBOT CONTROLLER ROUTINES
@@ -105,6 +105,7 @@ namespace control
             if (active_control[selected_ctrlid] == false)
             {
                 printf("Activating control %s\n", ctrl_names[selected_ctrlid].c_str());
+                set_controller_name(ctrl_names[selected_ctrlid]);
                 active_control[selected_ctrlid] = true;
             }
             ctrl_functions[selected_ctrlid](m, d);
@@ -114,6 +115,7 @@ namespace control
         // PLOTTING ROUTINES
 
         // Interaction Force
+        interaction_force_arm2(m, d, control::fi, 2, 2);
         mju_copy(variables_to_plot, fi, 2);
 
         // Applied torques

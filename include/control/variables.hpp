@@ -35,26 +35,40 @@ SOFTWARE.
 
 namespace control
 {
-    // Plotting variables
+    //// Plotting variables
     mjtNum variables_to_plot[MAX_CONTROL_VARIABLES_TO_PLOT];
     const int n_variables_to_plot = CONTROL_VARIABLES_TO_PLOT;
     std::vector<std::string> variables_to_plot_names = {"interaction_force_shoulder", "interaction_force_elbow", "robot_torque_shoulder", "robot_torque_elbow"};
 
-    // Controller Selector variables
+    //// Controller Selector variables
     std::vector<double> time_barrier;
     std::vector<bool> active_control;
     std::vector<mjfGeneric> ctrl_functions;
     std::vector<std::string> ctrl_names;
 
-    // Shared Controller Variables
+    
+    //// Shared Controller Variables
+
+    // Forces
     static mjtNum fr[2];   // force exerted by the robot
     static mjtNum fi[2];   // current force interaction
     static mjtNum dfi[2];  // interaction force first derivative
+
+    // Torques
+    static mjtNum tr[2];   // torque exerted by the robot
+    static mjtNum ti[2];   // current torque interaction
+    static mjtNum dti[2];  // interaction torque first derivative
     static mjtNum ffwd[2]; // feedforward
+
+    // Constants
     static mjtNum ka[2];   // ka
     static mjtNum kp[2];   // kp
     static mjtNum kd[2];   // kd
     static mjtNum ki[2];   // ki
+
+    // Extras
+    mjtNum jacp[12] = {0}; // Jacobian matrix for position
+    mjtNum jacv[12] = {0}; // Jacobian matrix for velocity
 }
 
 #endif // __CONTROL_VARIABLES__H_

@@ -31,6 +31,10 @@ SOFTWARE.
 #include <chrono>
 #include <mujoco/mujoco.h>
 #include <video.hpp>
+#include <basic.hpp>
+
+// Set controller name label width
+#define CONTROLLER_NAME_WIDTH 400
 
 // Set initial window size
 #define WINDOW_WIDTH 1280
@@ -68,6 +72,7 @@ namespace render
 
     mjrRect render_viewport;
     mjrRect viewport;
+    mjrRect controller_name_label_viewport;
     mjrRect recording_label_viewport;
     mjrRect fps_label_viewport;
     mjrRect figure_viewport0;
@@ -126,6 +131,7 @@ namespace render
         mj_resizeRender(&r, &render_viewport);
 
         viewport = {0, 0, 0, 0};
+        controller_name_label_viewport = {RENDER_WIDTH - RENDER_WIDTH / 2 - CONTROLLER_NAME_WIDTH / 2, RENDER_HEIGHT - 30, CONTROLLER_NAME_WIDTH, 30};
         recording_label_viewport = {0, WINDOW_HEIGHT - 30, 120, 30};
         fps_label_viewport = {0, 0, 80, 30};
         figure_viewport0 = {0, RENDER_HEIGHT - RENDER_HEIGHT / 2, RENDER_WIDTH / 2, RENDER_HEIGHT / 2};
@@ -184,6 +190,11 @@ namespace render
             mjr_figure(figure_viewport1, figures[0]->get(), &r.con);
             mjr_figure(figure_viewport2, figures[1]->get(), &r.con);
             mjr_figure(figure_viewport3, figures[2]->get(), &r.con);
+            
+            if (show_controller_name) {
+                mjr_label(controller_name_label_viewport, mjFONT_NORMAL, controller_name.c_str(), 1, 1, 1, 0.5, 0, 0, 0, &r.con);
+            }
+
             mjr_blitBuffer(r.view, viewport, 1, 0, &r.con);
         }
 
