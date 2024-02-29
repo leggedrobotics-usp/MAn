@@ -55,13 +55,18 @@ namespace video
         // params.push_back(cv::CAP_PROP_HW_ACCELERATION);
         // params.push_back(cv::VIDEO_ACCELERATION_ANY);
         // video.open("video_out.mp4", cv::CAP_FFMPEG, fourcc_, 1.0 / m->opt.timestep, video_size, params);
-        video.open("video_out.mp4", cv::CAP_FFMPEG, fourcc_, 1.0 / m->opt.timestep, video_size);
+        if (use_simulation_fps_for_video)
+            set_render_fps(1.0 / m->opt.timestep); // 200 Hz for exaple, if timestep is 5ms
+        video.open("video_out.mp4", cv::CAP_FFMPEG, fourcc_, target_render_fps, video_size);
 #endif
     }
 
-    void step()
+    void step(mjModel *m, mjData *d)
     {
         if (!video_record || Exit)
+            return;
+
+        if (!should_write_frame(m, d))
             return;
 #ifdef USE_OPENCV
         // Convert data | This should be better done in GPU... Maybe using FFMPEG/libavfilter
@@ -71,6 +76,7 @@ namespace video
         // Save it to video file | This step could take advantage from GPU Encoding...  Maybe using FFMPEG/libavutil*
         video.write(video_frame);
 #endif
+        video_frames_written++;
     }
 
     void finish()

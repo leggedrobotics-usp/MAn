@@ -43,7 +43,7 @@ namespace control
         // PREPARATION SECTION
 
         double time = 0;
-        double duration = 2;
+        double duration = 10;
 
         // After last time + duration seconds of simulation time, use model_based_feedforward_control_arm2
         time += duration;

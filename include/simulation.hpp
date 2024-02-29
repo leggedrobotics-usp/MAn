@@ -37,6 +37,7 @@ namespace simulation
     {
         // Simulation step
         mj_step(model, data);
+        sim_step++;
         // if (save_to_csv && writer)
         // {
         //     writer->append(data->time);

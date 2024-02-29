@@ -80,7 +80,10 @@ namespace render
     mjrRect figure_viewport2;
     mjrRect figure_viewport3;
 
-    std::chrono::steady_clock::time_point last_time, current_time;
+    std::chrono::steady_clock::time_point last_time, current_time, initial_time = std::chrono::steady_clock::now();
+
+    double last_rendered_sim_time = -1; // d->time from previous step
+    std::chrono::steady_clock::time_point last_rendered_time;
 
     int last_fps = 0;
 
@@ -114,6 +117,56 @@ namespace render
         mjr_freeContext(&r->con);
     }
 
+    bool should_render_frame(mjModel *m, mjData *d)
+    {
+        bool should = false;
+
+        // Render frames accordingly with video fps
+        if (video_record)
+        {
+            if (should_write_frame(m, d))
+                should = true;
+        }
+        else
+        {
+            // Render real-time checking with simulation
+            if (real_time)
+            {
+                std::chrono::duration<double> diff = current_time - initial_time;
+
+                if (d->time >= diff.count())
+                {
+                    should = true;
+                }
+            }
+            else
+            {
+                // Render real-time fps checking
+                {
+                    std::chrono::duration<double> diff = current_time - last_rendered_time;
+
+                    if (diff.count() >= target_render_time)
+                    {
+                        should = true;
+                        last_rendered_time = current_time;
+                    }
+                }
+
+                // Render simulation checking
+                {
+                    double diff = d->time - last_rendered_sim_time;
+
+                    if (diff >= target_render_time)
+                    {
+                        should = true;
+                        last_rendered_sim_time = d->time;
+                    }
+                }
+            }
+        }
+        return should;
+    }
+
     void init(mjModel *model, mjData *data)
     {
         // init GLFW, create window, make OpenGL context current, request v-sync
@@ -141,10 +194,9 @@ namespace render
         current_time = std::chrono::steady_clock::now();
     }
 
-    void render_fps(mjModel *m)
+    void render_fps(mjData *d)
     {
         // Get time difference
-        current_time = std::chrono::steady_clock::now();
         std::chrono::duration<double> diff = current_time - last_time;
         last_time = current_time;
 
@@ -154,13 +206,14 @@ namespace render
         last_fps = compensated_fps;
 
         // Get Real-Time Factor
-        double rtf = static_cast<double>(compensated_fps)/(1.0/m->opt.timestep);
+        std::chrono::duration<double> cur_real_time = current_time - initial_time;
+        double rtf = d->time / cur_real_time.count();
 
         // Prepare text to render
         std::stringstream ss;
 
         // Frames Per Second and Real-Time Factor
-        ss << "fps: " << compensated_fps << "(rtf: " << std::setprecision(3) << rtf << ")";
+        ss << "fps: " << compensated_fps << " (rtf: " << std::setprecision(3) << rtf << ")";
 
         // Render FPS text on window buffer
         mjr_setBuffer(mjFB_WINDOW, &r.con);
@@ -174,7 +227,11 @@ namespace render
             Exit = true;
             return;
         }
-        // run main rendering loop
+        // Set current time
+        current_time = std::chrono::steady_clock::now();
+
+        // run main rendering
+        if (should_render_frame(model, data))
         {
             // Update simulation data in the copied model and data
             mjv_updateScene(model, data, &r.opt, NULL, &r.cam, mjCAT_ALL, &r.scn);
@@ -190,34 +247,38 @@ namespace render
             mjr_figure(figure_viewport1, figures[0]->get(), &r.con);
             mjr_figure(figure_viewport2, figures[1]->get(), &r.con);
             mjr_figure(figure_viewport3, figures[2]->get(), &r.con);
-            
-            if (show_controller_name) {
+
+            if (show_controller_name)
+            {
                 mjr_label(controller_name_label_viewport, mjFONT_NORMAL, controller_name.c_str(), 1, 1, 1, 0.5, 0, 0, 0, &r.con);
             }
 
             mjr_blitBuffer(r.view, viewport, 1, 0, &r.con);
-        }
 
-        if (video_record)
-        {
-            // Get rendered OpenGL frame to video frame
+            if (video_record)
+            {
+                // Get rendered OpenGL frame to video frame
 
+                if (should_write_frame(model, data))
+                {
 #ifdef USE_OPENCV
-            mjr_readPixels(video::video_frame.data, nullptr, r.view, &r.con);
+                    mjr_readPixels(video::video_frame.data, nullptr, r.view, &r.con);
 #endif
+                }
 
-            // render recording label to screen
-            mjr_setBuffer(mjFB_WINDOW, &r.con);
-            mjr_label(recording_label_viewport, mjFONT_NORMAL, "Recording...", 1, 1, 0, 1, 1, 0, 0, &r.con);
+                // render recording label to screen
+                mjr_setBuffer(mjFB_WINDOW, &r.con);
+                mjr_label(recording_label_viewport, mjFONT_NORMAL, "Recording...", 1, 1, 0, 1, 1, 0, 0, &r.con);
+            }
+
+            if (show_fps)
+            {
+                render_fps(data);
+            }
+
+            // swap OpenGL buffers
+            glfwSwapBuffers(window);
         }
-
-        if (show_fps)
-        {
-            render_fps(model);
-        }
-
-        // swap OpenGL buffers
-        glfwSwapBuffers(window);
 
         // process GUI events and callbacks
         glfwPollEvents();

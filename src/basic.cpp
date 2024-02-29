@@ -29,6 +29,10 @@ SOFTWARE.
 
 int main()
 {
+    // set_render_fps(120); // 120 Hz for exaple, if timestep is ~8.33ms
+    // set_render_fps(60); // 60 Hz for exaple, if timestep is ~16,66ms
+    set_render_fps(30); // 30 Hz for exaple, if timestep is ~33.33ms
+
     // preparing controller selector
     control::prepare_controller_selector();
 
@@ -55,14 +59,14 @@ int main()
     // printf("nq %d njnt %d headers %ld\n", m->nq, m->njnt, headers.size());
     // writer->set_headers(headers);
 
-    render::init(m,d);
+    render::init(m, d);
     video::init(m, RENDER_WIDTH, RENDER_HEIGHT);
 
     while (!Exit && d->time <= end_time)
     {
         simulation::step(m, d);
         render::step(m, d);
-        video::step();
+        video::step(m, d);
     }
 
     video::finish();

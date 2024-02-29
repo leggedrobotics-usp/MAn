@@ -54,13 +54,30 @@ namespace control
 bool Exit = false;
 const bool high_quality_encoding = false;
 const bool high_quality_rendering = false;
+const bool use_simulation_fps_for_video = false;
 bool save_to_csv = true;
+bool real_time = true;
 bool show_fps = true;
 bool show_plot_figure = true;
 bool show_controller_name = true;
-bool video_record = false;
+bool video_record = true;
+long long int video_frames_written = 0;
+double target_render_fps = 60.0;
+double target_render_time = 1.0 / target_render_fps;
+long long int sim_step = -1;
 csv::csv_writer *writer = nullptr;
 std::vector<graphics::Figure *> figures;
-double end_time = 20.0; // Change this value
-// double end_time = std::numeric_limits<double>::max(); // Use this for undefined time
+double end_time = 40.0; // Change this value
+                        // double end_time = std::numeric_limits<double>::max(); // Use this for undefined time
+
+void set_render_fps(double fps)
+{
+    target_render_fps = fps;
+    target_render_time = 1.0 / fps;
+}
+
+bool should_write_frame(mjModel *m, mjData *d)
+{
+    return (video_frames_written == static_cast<long long int>(sim_step * target_render_fps * m->opt.timestep));
+}
 #endif // __BASIC__H_
