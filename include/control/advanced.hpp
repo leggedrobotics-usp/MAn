@@ -41,7 +41,8 @@ namespace control
     {
         // Calculate feedforward (ffwd) | frff from eq. 5 in ref. [1] using inertia instead of mass
         feedforward(m, d, control::ffwd, 2, 2, 1);
-        mju_add(control::ffwd, control::ffwd, d->qfrc_gravcomp + 2, 2); // add gravity compensation
+        // mj_passive(m, d);
+        // mju_add(control::ffwd, control::ffwd, d->qfrc_gravcomp + 2, 2); // add gravity compensation
 
         // // Inverting signal
         // mju_scl(control::ffwd, control::ffwd, -1, 2);
@@ -97,19 +98,19 @@ namespace control
     {
 
         mjtNum tmp[2];
-        mjtNum kp[2] = {1000, 1000};
-        mjtNum ki[2] = {100, 100};
+        mjtNum kp[2] = {2500, 2500};
+        mjtNum ki[2] = {250, 250};
 
         // TODO: Recalculate feedforward
         // Calculate feedforward (ffwd) | frff from eq. 5 in ref. [1] using inertia instead of mass
         feedforward(m, d, control::ffwd, 2, 2, 1);
-        mju_add(control::ffwd, control::ffwd, d->qfrc_gravcomp + 2, 2); // add gravity compensation
+        // mju_add(control::ffwd, control::ffwd, d->qfrc_gravcomp + 2, 2); // add gravity compensation
 
         // Set fr = ffwd
-        // mju_copy(control::fr, control::ffwd, 2);
-        mju_fill(control::fr, 0, 2);
-        mj_passive(m, d);
-        mju_add(control::fr, control::fr, control::ffwd, 2);
+        mju_copy(control::fr, control::ffwd, 2);
+        // mju_fill(control::fr, 0, 2);
+        // mj_passive(m, d);
+        // mju_add(control::fr, control::fr, control::ffwd, 2);
 
         // Calculate fr = ffwd + kp * (ddq_h - ddq_r)
         mju_copy(control::kp, kp, 2);

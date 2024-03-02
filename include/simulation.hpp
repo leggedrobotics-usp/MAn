@@ -29,12 +29,31 @@ SOFTWARE.
 
 namespace simulation
 {
+    std::chrono::steady_clock::time_point last_time, current_time, initial_time = std::chrono::steady_clock::now();
+
     void init()
     {
     }
 
+    void wait_to_step(mjModel *m, mjData *d)
+    {
+        if (real_time)
+        {
+            // Set current time
+            current_time = std::chrono::steady_clock::now();
+            std::chrono::duration<double> diff = current_time - initial_time;
+            double tdiff = d->time - diff.count();
+
+            if (tdiff > 0)
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<long long int>(tdiff * 1000.0)));
+            }
+        }
+    }
+
     void step(mjModel *model, mjData *data)
     {
+        wait_to_step(model, data);
         // Simulation step
         mj_step(model, data);
         sim_step++;

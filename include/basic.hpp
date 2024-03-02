@@ -27,6 +27,7 @@ SOFTWARE.
 
 #include <thread>
 #include <mutex>
+#include <chrono>
 #include <condition_variable>
 #include <cassert>
 #include <GLFW/glfw3.h>
@@ -60,7 +61,7 @@ bool real_time = true;
 bool show_fps = true;
 bool show_plot_figure = true;
 bool show_controller_name = true;
-bool video_record = true;
+bool video_record = false;
 long long int video_frames_written = 0;
 double target_render_fps = 60.0;
 double target_render_time = 1.0 / target_render_fps;
