@@ -71,6 +71,29 @@ namespace control
         }
     }
 
+    /// @brief Simple sin position controller for arm2.xml model
+    /// @param m - MuJoCo model pointer
+    /// @param d - MuJoCo data pointer
+    void new_position_arm2(const mjModel *m, mjData *d)
+    {
+        const mjtNum period = 2; // 2 seconds
+        const mjtNum f = 1.0 / period;
+        mjtNum t = d->time;
+
+        // Applying stiffness for position control oscilating
+        if (m->nq == 4)
+        {
+            // Your control law may come here like this one
+            if (t > 5.0) {
+                d->ctrl[1] = M_PI_2; 
+                // mju_fill(d->ctrl, M_PI * sin(t * M_PI * f), 2); // Just position
+            }
+
+            // Print control vector for debugging
+            // mju_printMat(d->ctrl, 1, m->nu);
+        }
+    }
+
 }
 
 #endif // __CONTROL_SIMPLE__H_

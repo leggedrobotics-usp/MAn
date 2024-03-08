@@ -38,6 +38,10 @@ SOFTWARE.
 namespace control
 {
 
+    graphics::Figure *time_qpos = nullptr;
+    graphics::Figure *time_torques = nullptr;
+    graphics::Figure *time_interaction_force = nullptr;
+
     void prepare_controller_selector()
     {
         // PREPARATION SECTION
@@ -45,27 +49,31 @@ namespace control
         double time = 0;
         double duration = 10;
 
-        // After last time + duration seconds of simulation time, use model_based_feedforward_control_arm2
-        time += duration;
-        time_barrier.push_back(time);
-        ctrl_names.push_back("Model-based Feedforward");
-        ctrl_functions.push_back(model_based_feedforward_control_arm2);
-        active_control.push_back(false);
+        // // After last time + duration seconds of simulation time, use model_based_feedforward_control_arm2
+        // time += duration;
+        // time_barrier.push_back(time);
+        // ctrl_names.push_back("Model-based Feedforward");
+        // ctrl_functions.push_back(model_based_feedforward_control_arm2);
+        // active_control.push_back(false);
 
-        // After last time + duration seconds of simulation time, use interaction_force_feedback_control_arm2
-        time += duration;
-        time_barrier.push_back(time);
-        ctrl_names.push_back("Interaction Force Feedback");
-        ctrl_functions.push_back(interaction_force_feedback_control_arm2);
-        active_control.push_back(false);
+        // // After last time + duration seconds of simulation time, use interaction_force_feedback_control_arm2
+        // time += duration;
+        // time_barrier.push_back(time);
+        // ctrl_names.push_back("Interaction Force Feedback");
+        // ctrl_functions.push_back(interaction_force_feedback_control_arm2);
+        // active_control.push_back(false);
 
         // After last time + duration seconds of simulation time, use acceleration_feedback_control_arm2
-        time += duration;
-        time_barrier.push_back(time);
-        ctrl_names.push_back("Acceleration Feedback");
-        ctrl_functions.push_back(acceleration_feedback_control_arm2);
-        active_control.push_back(false);
+        // time += duration;
+        // time_barrier.push_back(time);
+        // ctrl_names.push_back("Acceleration Feedback");
+        // ctrl_functions.push_back(acceleration_feedback_control_arm2);
+        // active_control.push_back(false);
 
+        // Setting up graphics
+        time_qpos = basic::figures["time_qpos"];
+        time_torques = basic::figures["time_ffwd"];
+        time_interaction_force = basic::figures["time_fi"];
     }
 
     /// @brief Controller selector for arm2.xml model
@@ -78,9 +86,11 @@ namespace control
         // HUMAN REFERENCE ROUTINES
 
         // Human ARM (2 DoF)
-        simple_sin_position_arm2(m, d); // just position
+        // simple_sin_position_arm2(m, d); // just position
+        new_position_arm2(m, d);
 
-        
+        // Calculating Interaction Force
+        interaction_force_arm2(m, d, control::fi, 2, 2);
 
         // SECTION I
         // ARM ROBOT CONTROLLER ROUTINES
@@ -112,21 +122,63 @@ namespace control
         }
 
         // SECTION II
+
+        // Calculating average energy
+        for (int i = 0; i < 2; ++i)
+        {
+            if (control::energy_b[i].size < control::energy_b[i].max_size)
+            {
+                double val = control::fi[i] * control::fi[i];
+                // double val = 0;
+                // printf("Before bufferd_push_back\n");
+                bufferd_push_back(&control::energy_b[i], val); // O(1)
+            }
+            else
+            {
+                double val = control::fi[i] * control::fi[i];
+                bufferd_push_and_pop(&control::energy_b[i], val, &control::energy_last_element[i]); // O(1)
+
+                energy_avg_acc[i] -= energy_last_element[i]; // O(1)
+            }
+            // printf("add %d == %d\n", input_vector[i], avg_acc);
+            energy_avg_qnt[i] = static_cast<double>(energy_b[i].size);
+        }
+        mju_add(control::energy_avg_acc, control::energy_avg_acc, control::fi, 2);
+        mju::mju_div(control::energy_avg_val, control::energy_avg_acc, control::energy_avg_qnt, 2);
+
+        // SECTION III
         // PLOTTING ROUTINES
 
+        // Position
+        time_qpos->append("human_qpos_shoulder", d->time, d->qpos[0]);
+        time_qpos->append("human_qpos_elbow", d->time, d->qpos[1]);
+        time_qpos->append("robot_qpos_shoulder", d->time, d->qpos[2]);
+        time_qpos->append("robot_qpos_elbow", d->time, d->qpos[3]);
+
         // Interaction Force
-        interaction_force_arm2(m, d, control::fi, 2, 2);
         mju_copy(variables_to_plot, fi, 2);
 
         // Applied torques
-        mju_copy(variables_to_plot + 2, d->ctrl + 4, 2);
+        mju_copy(variables_to_plot + 2, d->qfrc_actuator, 2); // Human Torques
+        // mju_copy(variables_to_plot + 2, d->qfrc_applied, 2); // Human Torques
+        mju_copy(variables_to_plot + 4, d->qfrc_actuator + 4, 2); // Robot Torques
+
+        time_torques->append(variables_to_plot_names[2], d->time, d->qfrc_actuator[0]);
+        time_torques->append(variables_to_plot_names[3], d->time, d->qfrc_actuator[1]);
+        time_torques->append(variables_to_plot_names[4], d->time, d->qfrc_actuator[2]);
+        time_torques->append(variables_to_plot_names[5], d->time, d->qfrc_actuator[3]);
+
+        // Interaction Energy
+        mju_copy(variables_to_plot + 6, control::energy_avg_val, 2);
+        time_interaction_force->append("human_interaction_energy_avg_shoulder", d->time, variables_to_plot[6]);
+        time_interaction_force->append("human_interaction_energy_avg_elbow", d->time, variables_to_plot[7]);
     }
 
 }
 
-// install control callback
+// install control callback | THIS usage was causing segmentation fault with the figure implementation
 // mjfGeneric mjcb_control = control::simple_sin_torques_arm2;
-mjfGeneric mjcb_control = control::controller_selector_arm2;
+// mjfGeneric mjcb_control = control::controller_selector_arm2;
 // mjfGeneric mjcb_control = nullptr; // No control
 
 #endif // __CONTROL__H_

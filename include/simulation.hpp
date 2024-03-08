@@ -37,7 +37,7 @@ namespace simulation
 
     void wait_to_step(mjModel *m, mjData *d)
     {
-        if (real_time)
+        if (real_time && !video_record)
         {
             // Set current time
             current_time = std::chrono::steady_clock::now();
@@ -55,21 +55,16 @@ namespace simulation
     {
         wait_to_step(model, data);
         // Simulation step
-        mj_step(model, data);
+        // mj_step(model, data);
+        mj_step1(model, data);
+        control::controller_selector_arm2(model, data);
+        mj_step2(model, data);
         sim_step++;
         // if (save_to_csv && writer)
         // {
         //     writer->append(data->time);
         //     writer->append(data->qpos, model->nq);
         // }
-        if (show_plot_figure)
-        {
-            for (graphics::Figure *f : figures)
-            {
-                if (f)
-                    f->update();
-            }
-        }
     }
 
     void finish(mjModel *m, mjData *d)

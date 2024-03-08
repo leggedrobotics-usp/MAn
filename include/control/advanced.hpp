@@ -40,9 +40,11 @@ namespace control
     void model_based_feedforward_control_arm2(const mjModel *m, mjData *d)
     {
         // Calculate feedforward (ffwd) | frff from eq. 5 in ref. [1] using inertia instead of mass
-        feedforward(m, d, control::ffwd, 2, 2, 1);
+        // feedforward(m, d, control::ffwd, 2, 2, 1);
+        // mju_copy(control::ffwd, d->qfrc_actuator, 2); // Human Torques
         // mj_passive(m, d);
-        // mju_add(control::ffwd, control::ffwd, d->qfrc_gravcomp + 2, 2); // add gravity compensation
+        // mju_add(control::ffwd, control::ffwd, d->qfrc_gravcomp, 2); // add gravity compensation
+        // mju_copy(control::ffwd, d->qfrc_gravcomp, 2); // add gravity compensation
 
         // // Inverting signal
         // mju_scl(control::ffwd, control::ffwd, -1, 2);
@@ -104,6 +106,7 @@ namespace control
         // TODO: Recalculate feedforward
         // Calculate feedforward (ffwd) | frff from eq. 5 in ref. [1] using inertia instead of mass
         feedforward(m, d, control::ffwd, 2, 2, 1);
+        // mj_passive(m, d);
         // mju_add(control::ffwd, control::ffwd, d->qfrc_gravcomp + 2, 2); // add gravity compensation
 
         // Set fr = ffwd

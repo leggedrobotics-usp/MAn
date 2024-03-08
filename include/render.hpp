@@ -32,6 +32,7 @@ SOFTWARE.
 #include <mujoco/mujoco.h>
 #include <video.hpp>
 #include <basic.hpp>
+#include <graphics.hpp>
 
 // Set controller name label width
 #define CONTROLLER_NAME_WIDTH 400
@@ -132,11 +133,24 @@ namespace render
             // Render real-time checking with simulation
             if (real_time)
             {
-                std::chrono::duration<double> diff = current_time - initial_time;
-
-                if (d->time >= diff.count())
                 {
-                    should = true;
+                    std::chrono::duration<double> diff = current_time - initial_time;
+
+                    if (d->time >= diff.count())
+                    {
+                        should = true;
+                    }
+                }
+
+                // Render real-time fps checking
+                {
+                    std::chrono::duration<double> diff = current_time - last_rendered_time;
+
+                    if (diff.count() >= target_render_time)
+                    {
+                        should = should && true;
+                        last_rendered_time = current_time;
+                    }
                 }
             }
             else
@@ -244,9 +258,20 @@ namespace render
             // render the scene
             mjr_setBuffer(mjFB_OFFSCREEN, &r.con);
             mjr_render(figure_viewport0, &r.scn, &r.con);
-            mjr_figure(figure_viewport1, figures[0]->get(), &r.con);
-            mjr_figure(figure_viewport2, figures[1]->get(), &r.con);
-            mjr_figure(figure_viewport3, figures[2]->get(), &r.con);
+
+            if (show_plot_figure)
+            {
+                for (graphics::Figure *f : graphics::figures_to_render)
+                {
+                    f->update();
+                }
+                if (graphics::figures_to_render[0])
+                    mjr_figure(figure_viewport1, graphics::figures_to_render[0]->get(), &r.con);
+                if (graphics::figures_to_render[1])
+                    mjr_figure(figure_viewport2, graphics::figures_to_render[1]->get(), &r.con);
+                if (graphics::figures_to_render[2])
+                    mjr_figure(figure_viewport3, graphics::figures_to_render[2]->get(), &r.con);
+            }
 
             if (show_controller_name)
             {

@@ -24,6 +24,7 @@ SOFTWARE.
 
 // Includes for basic simulation
 #include <basic.hpp>
+#include <control.hpp>
 #include <simulation.hpp>
 #include <render.hpp>
 
@@ -33,19 +34,22 @@ int main()
     // set_render_fps(60); // 60 Hz for exaple, if timestep is ~16,66ms
     set_render_fps(30); // 30 Hz for exaple, if timestep is ~33.33ms
 
-    // preparing controller selector
-    control::prepare_controller_selector();
-
     // Load original model and data
     mjModel *m = mj_loadXML("model/arm2.xml", NULL, NULL, 0);
     mjData *d = mj_makeData(m);
     m->vis.quality.offsamples = high_quality_rendering ? 4 : 1;
 
-    figures.push_back(new graphics::FigureTimeQpos(m, d));
-    figures.push_back(new graphics::FigureTimeInteractionForce(d, control::variables_to_plot, 0,
-                                                               2, control::variables_to_plot_names));
-    figures.push_back(new graphics::FigureTimeFeedForwardForce(d, control::variables_to_plot, 2,
-                                                               2, control::variables_to_plot_names));
+    basic::figures["time_qpos"] = reinterpret_cast<graphics::Figure *>(new graphics::FigureTimeGeneric("Joints' Positions"));
+    basic::figures["time_fi"]  = reinterpret_cast<graphics::Figure *>(new graphics::FigureTimeGeneric("Interaction Forces"));
+    basic::figures["time_ffwd"]  = reinterpret_cast<graphics::Figure *>(new graphics::FigureTimeGeneric("Feedforward Force"));
+
+    graphics::figures_to_render.resize(3);
+    graphics::figures_to_render[0] = basic::figures["time_qpos"];
+    graphics::figures_to_render[1] = basic::figures["time_fi"];
+    graphics::figures_to_render[2] = basic::figures["time_ffwd"];
+
+    // preparing controller selector
+    control::prepare_controller_selector();
 
     // Saving log to CSV file
     // writer = new csv::csv_writer("log_arm2.csv");
@@ -58,6 +62,8 @@ int main()
 
     // printf("nq %d njnt %d headers %ld\n", m->nq, m->njnt, headers.size());
     // writer->set_headers(headers);
+    bufferd_init(&control::energy_b[0], WINDOW_SIZE); // initialize buffer with WINDOW_SIZE as maximum size
+    bufferd_init(&control::energy_b[1], WINDOW_SIZE); // initialize buffer with WINDOW_SIZE as maximum size
 
     render::init(m, d);
     video::init(m, RENDER_WIDTH, RENDER_HEIGHT);
@@ -72,6 +78,8 @@ int main()
     video::finish();
     render::finish();
     simulation::finish(m, d);
+    bufferd_free(&control::energy_b[0]);
+    bufferd_free(&control::energy_b[1]);
 
     return 0;
 }

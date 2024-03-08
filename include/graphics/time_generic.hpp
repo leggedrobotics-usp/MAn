@@ -22,19 +22,28 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#ifndef __GRAPHICS__H_
-#define __GRAPHICS__H_
+#ifndef __GRAPHICS_TIME_GENERIC__H_
+#define __GRAPHICS_TIME_GENERIC__H_
 
+#include <graphics/figure.hpp>
+#include <utils/mj.hpp>
 #include <string>
 #include <cstring>
 #include <vector>
-#include <mujoco/mujoco.h>
-#include <graphics/figure.hpp>
-#include <graphics/time_generic.hpp>
 
 namespace graphics
 {
-    std::vector<graphics::Figure*> figures_to_render;
+    class FigureTimeGeneric : public Figure
+    {
+    public:
+
+        FigureTimeGeneric(std::string versus_name)
+        {
+            init();
+            set_title("Time x " + versus_name);
+            set_xlabel("Time (s)");
+        }
+    };
 }
 
-#endif // __GRAPHICS__H_
+#endif // __GRAPHICS_TIME_GENERIC__H_
