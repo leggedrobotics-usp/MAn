@@ -60,6 +60,7 @@ namespace control
     static mjtNum ti[2] = {0};   // current torque interaction
     static mjtNum dti[2] = {0};  // interaction torque first derivative
     static mjtNum ffwd[2] = {0}; // feedforward
+    static mjtNum ffb[2] = {0}; // feedback
 
     // Constants
     static mjtNum ka[2] = {0}; // ka
@@ -77,6 +78,12 @@ namespace control
     double energy_avg_qnt[2] = {0};
     double energy_avg_val[2] = {0};
     bufferd_t energy_b[2] = {0}; // buffer struct
+
+    // Figures
+    graphics::Figure *time_qpos = nullptr;
+    graphics::Figure *time_torques = nullptr;
+    graphics::Figure *time_interaction_force = nullptr;
+
 }
 
 #endif // __CONTROL_VARIABLES__H_

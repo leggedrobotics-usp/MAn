@@ -38,10 +38,6 @@ SOFTWARE.
 namespace control
 {
 
-    graphics::Figure *time_qpos = nullptr;
-    graphics::Figure *time_torques = nullptr;
-    graphics::Figure *time_interaction_force = nullptr;
-
     void prepare_controller_selector()
     {
         // PREPARATION SECTION
@@ -65,10 +61,10 @@ namespace control
 
         // After last time + duration seconds of simulation time, use acceleration_feedback_control_arm2
         // time += duration;
-        // time_barrier.push_back(time);
-        // ctrl_names.push_back("Acceleration Feedback");
-        // ctrl_functions.push_back(acceleration_feedback_control_arm2);
-        // active_control.push_back(false);
+        time_barrier.push_back(time);
+        ctrl_names.push_back("Acceleration Feedback");
+        ctrl_functions.push_back(acceleration_feedback_control_arm2);
+        active_control.push_back(false);
 
         // Setting up graphics
         time_qpos = basic::figures["time_qpos"];
@@ -163,15 +159,17 @@ namespace control
         // mju_copy(variables_to_plot + 2, d->qfrc_applied, 2); // Human Torques
         mju_copy(variables_to_plot + 4, d->qfrc_actuator + 4, 2); // Robot Torques
 
-        time_torques->append(variables_to_plot_names[2], d->time, d->qfrc_actuator[0]);
-        time_torques->append(variables_to_plot_names[3], d->time, d->qfrc_actuator[1]);
-        time_torques->append(variables_to_plot_names[4], d->time, d->qfrc_actuator[2]);
-        time_torques->append(variables_to_plot_names[5], d->time, d->qfrc_actuator[3]);
+        // time_torques->append(variables_to_plot_names[2], d->time, d->qfrc_actuator[0]);
+        // time_torques->append(variables_to_plot_names[3], d->time, d->qfrc_actuator[1]);
+        // time_torques->append(variables_to_plot_names[4], d->time, d->qfrc_actuator[2]);
+        // time_torques->append(variables_to_plot_names[5], d->time, d->qfrc_actuator[3]);
 
         // Interaction Energy
         mju_copy(variables_to_plot + 6, control::energy_avg_val, 2);
-        time_interaction_force->append("human_interaction_energy_avg_shoulder", d->time, variables_to_plot[6]);
-        time_interaction_force->append("human_interaction_energy_avg_elbow", d->time, variables_to_plot[7]);
+        // time_interaction_force->append("human_interaction_energy_avg_shoulder", d->time, variables_to_plot[6]);
+        // time_interaction_force->append("human_interaction_energy_avg_elbow", d->time, variables_to_plot[7]);
+        time_interaction_force->append("human_interaction_force_0", d->time, control::fi[0]);
+        time_interaction_force->append("human_interaction_force_1", d->time, control::fi[1]);
     }
 
 }

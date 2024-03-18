@@ -27,6 +27,11 @@ SOFTWARE.
 
 #include <cassert>
 #include <mujoco/mujoco.h>
+#define mjUSEAVX
+
+#ifdef mjUSEAVX
+#include <immintrin.h>
+#endif
 
 namespace mju
 {
