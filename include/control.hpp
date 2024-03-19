@@ -72,6 +72,15 @@ namespace control
         time_interaction_force = basic::figures["time_fi"];
     }
 
+    void clear_control_variables()
+    {
+        delete control::qMr;
+        delete control::DqM;
+        
+        control::qMr = nullptr;
+        control::DqM = nullptr;
+    }
+
     /// @brief Controller selector for arm2.xml model
     /// @param m - MuJoCo model pointer
     /// @param d - MuJoCo data pointer
@@ -115,6 +124,12 @@ namespace control
                 active_control[selected_ctrlid] = true;
             }
             ctrl_functions[selected_ctrlid](m, d);
+
+            // Apply Desired Actuator Torques as Effective Torques
+            mju_copy(control::Tr, control::DTr, 2);
+
+            // Apply Actuator Dynamics | TODO
+            mju_copy(d->ctrl + 2, control::Tr, 2);
         }
 
         // SECTION II

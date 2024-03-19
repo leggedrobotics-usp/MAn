@@ -48,31 +48,41 @@ namespace control
     std::vector<mjfGeneric> ctrl_functions;
     std::vector<std::string> ctrl_names;
 
-    //// Shared Controller Variables
+    //// Shared Controller/Dynamics Variables
 
-    // Forces
+    // Forces // Deprecated
+
     static mjtNum fr[2] = {0};  // force exerted by the robot
     static mjtNum fi[2] = {0};  // current force interaction
     static mjtNum dfi[2] = {0}; // interaction force first derivative
 
     // Torques
-    static mjtNum tr[2] = {0};   // torque exerted by the robot
-    static mjtNum ti[2] = {0};   // current torque interaction
-    static mjtNum dti[2] = {0};  // interaction torque first derivative
-    static mjtNum ffwd[2] = {0}; // feedforward
-    static mjtNum ffb[2] = {0}; // feedback
+
+    static mjtNum DTr[2] = {0}; // Desired Torque exerted by the robot
+    static mjtNum Tr[2] = {0};  // Torque exerted by the robot
+    static mjtNum Ti[2] = {0};  // Current Torque Interaction
+    static mjtNum dTi[2] = {0}; // Interaction Torque first derivative
+    static mjtNum Tff[2] = {0}; // FeedForward Torque
+    static mjtNum Tfb[2] = {0}; // FeedBack Torque
 
     // Constants
-    static mjtNum ka[2] = {0}; // ka
-    static mjtNum kp[2] = {0}; // kp
-    static mjtNum kd[2] = {0}; // kd
-    static mjtNum ki[2] = {0}; // ki
+
+    static mjtNum ka[2] = {0}; // ka | springs coefficients
+    static mjtNum kp[2] = {0}; // kp | proportional coefficients
+    static mjtNum ki[2] = {0}; // ki | integral coefficients
+    static mjtNum kd[2] = {0}; // kd | derivative coefficients
 
     // Extras
-    mjtNum jacp[12] = {0}; // Jacobian matrix for position
-    mjtNum jacv[12] = {0}; // Jacobian matrix for velocity
+
+    int nDqM = 0; // Dense Inertia Matrix Size
+    int nqMr = 0; // Robot Inertia Matrix Size
+    mjtNum jacp[12] = {0};     // Jacobian matrix for position
+    mjtNum jacv[12] = {0};     // Jacobian matrix for velocity
+    mjtNum *DqM = nullptr; // Dense Inertia Matrix
+    mjtNum *qMr = nullptr; // Robot Inertia Matrix
 
     // Energy Metrics
+
     double energy_last_element[2] = {0};
     double energy_avg_acc[2] = {0};
     double energy_avg_qnt[2] = {0};
@@ -80,6 +90,7 @@ namespace control
     bufferd_t energy_b[2] = {0}; // buffer struct
 
     // Figures
+
     graphics::Figure *time_qpos = nullptr;
     graphics::Figure *time_torques = nullptr;
     graphics::Figure *time_interaction_force = nullptr;

@@ -39,31 +39,11 @@ namespace control
     /// @param d - MuJoCo data pointer
     void model_based_feedforward_control_arm2(const mjModel *m, mjData *d)
     {
-        // Calculate feedforward (ffwd) | frff from eq. 5 in ref. [1] using inertia instead of mass
-        // feedforward(m, d, control::ffwd, 2, 2, 1);
-        // control::ffwd[0] = d->qM[1] * d->qacc[0];
-        // control::ffwd[1] = d->qM[3] * d->qacc[1];
-        // time_torques->append("qM[0]", d->time, d->qM[0]);
-        // time_torques->append("qM[1]", d->time, d->qM[1]);
-        // time_torques->append("qM[2]", d->time, d->qM[2]);
-        // time_torques->append("qM[3]", d->time, d->qM[3]);
-        mju_copy(control::ffwd, d->qfrc_actuator, 2); // Human Torques
-        // mj_passive(m, d);
-        // mju_add(control::ffwd, control::ffwd, d->qfrc_bias + 2, 2); // add gravity compensation and coriolis
-        // mju_copy(control::ffwd, d->qfrc_gravcomp, 2); // add gravity compensation
-
-        // // Inverting signal
-        // mju_scl(control::ffwd, control::ffwd, -1, 2);
+        // Calculate feedforward (Tff) | frff from eq. 5 in ref. [1] using inertia instead of mass
+        feedforward_arm2(m, d, control::Tff, 2, 2);
 
         // Set control with feedforward
-        mju_copy(d->ctrl + 4, control::ffwd, 2);
-        // d->ctrl[4] = d->qfrc_actuator[0];
-        // d->ctrl[5] = d->qfrc_actuator[1];
-        // time_torques->append("ctrl[4]", d->time, d->ctrl[4]);
-        // time_torques->append("ctrl[5]", d->time, d->ctrl[5]);
-        // time_torques->append("qfrc_actuator[1]", d->time, d->qfrc_actuator[1]);
-        // time_torques->append("ffwd[0]", d->time, control::ffwd[0]);
-        // time_torques->append("ffwd[1]", d->time, control::ffwd[1]);
+        mju_copy(control::DTr, control::Tff, 2); // DTr = Tff
     }
 
     /// @brief Interaction force feedback control for arm2.xml model
@@ -80,11 +60,11 @@ namespace control
         // mju_copy(kp, m->tendon_stiffness, 2);
         // mju_copy(kd, m->tendon_damping, 2);
 
-        // Calculate feedforward (ffwd) | frff from eq. 5 in ref. [1] using inertia instead of mass
-        feedforward(m, d, control::ffwd, 2, 2, 1);
+        // Calculate feedforward (Tff) | frff from eq. 5 in ref. [1] using inertia instead of mass
+        feedforward_arm2(m, d, control::Tff, 2, 2);
 
-        // Set fr = ffwd
-        mju_copy(control::fr, control::ffwd, 2);
+        // Set DTr = Tff
+        mju_copy(control::DTr, control::Tff, 2);
 
         // Calculate fi
         interaction_force_arm2(m, d, control::fi, 2, 2);
@@ -92,18 +72,16 @@ namespace control
         // Calculate dfi
         derivative_interaction_force_arm2(m, d, control::dfi, 2, 2);
 
-        // Calculate fr = ffwd + (kp * fi)
+        // Calculate DTr = Tff + (kp * fi)
         mju_copy(control::kp, kp, 2);
         mju::mju_mul(tmp, control::kp, control::fi, 2);
-        mju_add(control::fr, control::fr, tmp, 2);
+        mju_add(control::DTr, control::DTr, tmp, 2);
 
-        // Calculate fr = ffwd + (kp * fi) + (kd * dfi)
+        // Calculate DTr = Tff + (kp * fi) + (kd * dfi)
         mju_copy(control::kd, kd, 2);
         mju::mju_mul(tmp, control::kd, control::fi, 2);
-        mju_add(control::fr, control::fr, tmp, 2);
+        mju_add(control::DTr, control::DTr, tmp, 2);
 
-        // Set control with fr = ffwd + (kp * fi) + (kd * dfi)
-        mju_copy(d->ctrl + 4, control::fr, 2);
     }
 
     /// @brief Acceleration Feedback Control for arm2.xml model
@@ -113,77 +91,36 @@ namespace control
     {
 
         mjtNum tmp[2];
-        mjtNum kp[2] = {0.0001, 0.0001};
-        mjtNum ki[2] = {0.000126, 0.000126};
-        mjtNum dense_qM[m->nv*m->nv];
-        mjtNum qMr[4];
+        mjtNum kp[2] = {0.00001, 0.00001};
+        mjtNum ki[2] = {0.0000126, 0.0000126};
 
-        mj_fullM(m, dense_qM, d->qM);
-        qMr[0] = dense_qM[8+2];
-        qMr[1] = dense_qM[8+3];
-        qMr[2] = dense_qM[12+2];
-        qMr[3] = dense_qM[12+3];
+        // Calculate Feedforward Torques (Tff) | frff from eq. 5 in ref. [1] using inertia instead of mass
+        feedforward_arm2(m, d, control::Tff, 2, 2);
 
-        time_torques->append("qM_0", d->time, qMr[0]);
-        time_torques->append("qM_1", d->time, qMr[1]);
-        time_torques->append("qM_2", d->time, qMr[2]);
-        time_torques->append("qM_3", d->time, qMr[3]);
+        // Set Tfb = 0
+        mju_fill(control::Tfb, 0, 2); // Tfb = 0
 
-        mju_fill(control::ffwd, 0, 2);
-
-        mju_mulMatVec(control::ffwd, qMr, d->qacc, 2, 2);
-        mju_add(control::ffwd, control::ffwd, d->qfrc_bias + 2, 2);
-
-        // TODO: Recalculate feedforward
-        // Calculate feedforward (ffwd) | frff from eq. 5 in ref. [1] using inertia instead of mass
-        // feedforward(m, d, control::ffwd, 2, 2, 1);
-        // mju_copy(control::ffwd, d->qfrc_actuator, 2); // Human Torques
-        // mju_copy(control::ffwd, d->qfrc_applied, 2); // Applied torques in Human
-        // mju_copy(control::ffwd, d->qfrc_smooth, 2); // Human Torques
-        // mju_sub(control::ffwd, control::ffwd, d->qfrc_passive + 2, 2); // Robot Spring
-        // mju_sub(control::ffwd, control::ffwd, d->qfrc_bias, 2); // Robot Spring
-
-        // time_torques->append("Fact_0", d->time, d->qfrc_actuator[0]);
-        // time_torques->append("Fact_1", d->time, d->qfrc_actuator[1]);
-        
-        // time_torques->append("Fff_0", d->time, control::ffwd[0]);
-        // time_torques->append("Fff_1", d->time, control::ffwd[1]);        
-
-
-        // mj_passive(m, d);
-        // mju_add(control::ffwd, control::ffwd, d->qfrc_gravcomp + 2, 2); // add gravity compensation
-
-        // Set fr = ffwd // Deprecatedtrue
-        // mju_copy(control::fr, control::ffwd, 2);
-        // mju_fill(control::fr, 0, 2);
-        // mj_passive(m, d);
-        // mju_add(control::fr, control::fr, control::ffwd, 2);
-
-        mju_fill(control::ffb, 0, 2); // ffb = 0
-        // Calculate ffb = kp * (ddq_h - ddq_r)
+        // Calculate Tfb = kp * (ddq_h - ddq_r)
         mju_copy(control::kp, kp, 2);
-        mju_sub(tmp, d->qacc, d->qacc + 2, 2); // (ddq_h - ddq_r)
-        mju::mju_mul(tmp, control::kp, tmp, 2);
-        mju_add(control::ffb, control::ffb, tmp, 2);
+        mju_sub(tmp, d->qacc, d->qacc + 2, 2); // tmp = (ddq_h - ddq_r)
+        mju::mju_mul(tmp, control::kp, tmp, 2); // tmp = kp * (ddq_h - ddq_r)
+        mju_addTo(control::Tfb, tmp, 2); // Tfb = kp * (ddq_h - ddq_r)
 
-        // Calculate ffb = kp * (ddq_h - ddq_r) + ki * (dq_h - dq_r)
+        // Calculate Tfb = kp * (ddq_h - ddq_r) + ki * (dq_h - dq_r)
         mju_copy(control::ki, ki, 2);
-        mju_sub(tmp, d->qvel, d->qvel + 2, 2); // (dq_h - dq_r)
-        mju::mju_mul(tmp, control::ki, tmp, 2);
-        mju_add(control::ffb, control::ffb, tmp, 2);
+        mju_sub(tmp, d->qvel, d->qvel + 2, 2); // tmp = (dq_h - dq_r)
+        mju::mju_mul(tmp, control::ki, tmp, 2); // tmp = ki * (dq_h - dq_r)
+        mju_addTo(control::Tfb, tmp, 2); // Tfb = kp * (ddq_h - ddq_r) + ki * (dq_h - dq_r)
 
-        // time_torques->append("Ffb_0", d->time, ffb[0]);
-        // time_torques->append("Ffb_1", d->time, ffb[1]);
+        // time_torques->append("Tfb_0", d->time, Tfb[0]);
+        // time_torques->append("Tfb_1", d->time, Tfb[1]);
 
-        // Set control with fr = ffwd + ffb
-        mju_add(control::fr, control::ffwd, control::ffb, 2);
-        control::fr[0] = mju_clip(control::fr[0], -500, 500);
-        control::fr[1] = mju_clip(control::fr[1], -500, 500);
+        // Set control with DTr = Tff + Tfb
+        mju_add(control::DTr, control::Tff, control::Tfb, 2);
 
-        // time_torques->append("Fr_0", d->time, fr[0]);
-        // time_torques->append("Fr_1", d->time, fr[1]);
+        // time_torques->append("DTr_0", d->time, DTr[0]);
+        // time_torques->append("DTr_1", d->time, DTr[1]);
 
-        mju_copy(d->ctrl + 2, control::fr, 2);
     }
 
     /// @brief Advanced Predictive Interaction Control for arm2.xml model

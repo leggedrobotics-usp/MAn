@@ -78,8 +78,11 @@ int main()
     video::finish();
     render::finish();
     simulation::finish(m, d);
+
+    // Freeing control memory
     bufferd_free(&control::energy_b[0]);
     bufferd_free(&control::energy_b[1]);
+    control::clear_control_variables();
 
     return 0;
 }

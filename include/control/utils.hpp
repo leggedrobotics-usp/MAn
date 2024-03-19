@@ -39,25 +39,48 @@ namespace control
     /// @param ffwd - feedfordward force (resulting)
     /// @param offset - robot mass offset
     /// @param n - degrees of freedom
-    /// @param inertia_type - inertia type: 0 - mass | 1 - inertia
-    void feedforward(const mjModel *m, mjData *d, mjtNum *ffwd, int offset, int n, int inertia_type = 0)
+    void feedforward_arm2(const mjModel *m, mjData *d, mjtNum *ffwd, int offset, int n)
     {
-        // Please use one or the other:
 
-        if (inertia_type == 0)
-        {
-            // Mass
-            mju::mju_mul(ffwd, m->body_mass + offset, d->qacc, n); // ffwd = m_r * ddq_h
+        // Inertia matrix from joints
+        // Tff = M_r * ddq_h + h(q, dq)
+        
+
+        // Memory management
+        // Check DqM memory availability
+        if (control::nDqM != m->nv * m->nv) {
+            if (control::DqM) delete control::DqM;
+            control::DqM = new mjtNum[m->nv * m->nv];
+            assert(control::DqM);
+            control::nDqM = m->nv * m->nv;
         }
-        else if (inertia_type == 1)
-        {
-            // Inertia
-            mju::mju_mul(ffwd, d->qM + offset, d->qacc, n); // ffwd = M_r * ddq_h
+
+        // Check DqM memory availability
+        if (control::nqMr != 4) {
+            if (control::qMr) delete control::qMr;
+            control::qMr = new mjtNum[4];
+            assert(control::qMr);
+            control::nqMr = 4;
         }
-        else
-        {
-            assert(false); // Invalid inertia type
-        }
+
+        // Feedforward calculation
+
+        // Get DqM: Dense Inertia Matrix
+        mj_fullM(m, control::DqM, d->qM);
+
+        // Set qMr elements from DqM
+        control::qMr[0] = control::DqM[8 + 2];
+        control::qMr[1] = control::DqM[8 + 3];
+        control::qMr[2] = control::DqM[12 + 2];
+        control::qMr[3] = control::DqM[12 + 3];
+
+        // time_torques->append("qM_0", d->time, qMr[0]);
+        // time_torques->append("qM_1", d->time, qMr[1]);
+        // time_torques->append("qM_2", d->time, qMr[2]);
+        // time_torques->append("qM_3", d->time, qMr[3]);
+
+        mju_mulMatVec(ffwd, qMr, d->qacc, 2, 2);
+        mju_addTo(ffwd, d->qfrc_bias + 2, 2);
     }
 
     /// @brief Calculate the interaction force for arm2.xml model
