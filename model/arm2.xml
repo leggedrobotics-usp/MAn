@@ -56,8 +56,8 @@
   <actuator>
     <position name="shoulder_p" joint="shoulder" ctrlrange="-3.1415 3.1415" kp="300" kv="0.9"/>
     <position name="elbow_p" joint="elbow" ctrlrange="-3.1415 3.1415" kp="300" kv="0.9"/>
-    <motor name="shoulder_t_2" joint="shoulder_2"/>
-    <motor name="elbow_t_2" joint="elbow_2"/>
+    <motor name="shoulder_t_2" joint="shoulder_2" ctrlrange="-500 500" forcerange="-500 500"/>
+    <motor name="elbow_t_2" joint="elbow_2" ctrlrange="-500 500" forcerange="-500 500"/>
   </actuator>
 
   <tendon>
