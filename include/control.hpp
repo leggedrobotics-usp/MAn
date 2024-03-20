@@ -74,11 +74,16 @@ namespace control
 
     void clear_control_variables()
     {
-        delete control::qMr;
-        delete control::DqM;
-        
+        if (control::qMr)
+            delete control::qMr;
+        if (control::DqM)
+            delete control::DqM;
+        if (control::pred_d)
+            mj_deleteData(control::pred_d); // Delete prediction data
+
         control::qMr = nullptr;
         control::DqM = nullptr;
+        control::pred_d = nullptr;
     }
 
     /// @brief Controller selector for arm2.xml model
@@ -185,6 +190,9 @@ namespace control
         // time_interaction_force->append("human_interaction_energy_avg_elbow", d->time, variables_to_plot[7]);
         time_interaction_force->append("human_interaction_force_0", d->time, control::fi[0]);
         time_interaction_force->append("human_interaction_force_1", d->time, control::fi[1]);
+
+        time_torques->append("Act_2", d->time, d->qfrc_actuator[2]);
+        // time_torques->append("Act_3", d->time, d->qfrc_actuator[3]);
     }
 
 }

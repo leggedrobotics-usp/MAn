@@ -80,6 +80,9 @@ namespace control
     mjtNum jacv[12] = {0};     // Jacobian matrix for velocity
     mjtNum *DqM = nullptr; // Dense Inertia Matrix
     mjtNum *qMr = nullptr; // Robot Inertia Matrix
+    
+    // Prediction
+    mjData *pred_d = nullptr;
 
     // Energy Metrics
 

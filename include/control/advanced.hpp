@@ -81,7 +81,6 @@ namespace control
         mju_copy(control::kd, kd, 2);
         mju::mju_mul(tmp, control::kd, control::fi, 2);
         mju_add(control::DTr, control::DTr, tmp, 2);
-
     }
 
     /// @brief Acceleration Feedback Control for arm2.xml model
@@ -93,34 +92,38 @@ namespace control
         mjtNum tmp[2];
         mjtNum kp[2] = {0.00001, 0.00001};
         mjtNum ki[2] = {0.0000126, 0.0000126};
+        mjtNum time_tau = mju_max(m->actuator_dynprm[mjNDYN * 2], m->actuator_dynprm[mjNDYN * 3]);
+        int nsteps = static_cast<int>((5 * time_tau) / m->opt.timestep);
+        // printf("nsteps = %d\n", nsteps);
 
         // Calculate Feedforward Torques (Tff) | frff from eq. 5 in ref. [1] using inertia instead of mass
-        feedforward_arm2(m, d, control::Tff, 2, 2);
+        feedforward_arm2(m, d, control::Tff, 2, 2, false, nsteps);
 
         // Set Tfb = 0
         mju_fill(control::Tfb, 0, 2); // Tfb = 0
 
         // Calculate Tfb = kp * (ddq_h - ddq_r)
         mju_copy(control::kp, kp, 2);
-        mju_sub(tmp, d->qacc, d->qacc + 2, 2); // tmp = (ddq_h - ddq_r)
+        mju_sub(tmp, d->qacc, d->qacc + 2, 2);  // tmp = (ddq_h - ddq_r)
         mju::mju_mul(tmp, control::kp, tmp, 2); // tmp = kp * (ddq_h - ddq_r)
-        mju_addTo(control::Tfb, tmp, 2); // Tfb = kp * (ddq_h - ddq_r)
+        mju_addTo(control::Tfb, tmp, 2);        // Tfb = kp * (ddq_h - ddq_r)
 
         // Calculate Tfb = kp * (ddq_h - ddq_r) + ki * (dq_h - dq_r)
         mju_copy(control::ki, ki, 2);
-        mju_sub(tmp, d->qvel, d->qvel + 2, 2); // tmp = (dq_h - dq_r)
+        mju_sub(tmp, d->qvel, d->qvel + 2, 2);  // tmp = (dq_h - dq_r)
         mju::mju_mul(tmp, control::ki, tmp, 2); // tmp = ki * (dq_h - dq_r)
-        mju_addTo(control::Tfb, tmp, 2); // Tfb = kp * (ddq_h - ddq_r) + ki * (dq_h - dq_r)
+        mju_addTo(control::Tfb, tmp, 2);        // Tfb = kp * (ddq_h - ddq_r) + ki * (dq_h - dq_r)
 
         // time_torques->append("Tfb_0", d->time, Tfb[0]);
         // time_torques->append("Tfb_1", d->time, Tfb[1]);
 
         // Set control with DTr = Tff + Tfb
         mju_add(control::DTr, control::Tff, control::Tfb, 2);
+        // if (d->time > 5.0)
+        //     control::DTr[1] = 1;
 
-        // time_torques->append("DTr_0", d->time, DTr[0]);
+        time_torques->append("DTr_0", d->time, DTr[0]);
         // time_torques->append("DTr_1", d->time, DTr[1]);
-
     }
 
     /// @brief Advanced Predictive Interaction Control for arm2.xml model
