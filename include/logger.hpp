@@ -22,54 +22,46 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#ifndef __SIMULATION__H_
-#define __SIMULATION__H_
+#ifndef __LOGGER__H_
+#define __LOGGER__H_
 
+#include <csv/csv.hpp>
 #include <basic.hpp>
 
-namespace simulation
+namespace logger
 {
-    std::chrono::steady_clock::time_point last_time, current_time, initial_time = std::chrono::steady_clock::now();
+    csv::csv_writer *writer = nullptr;
 
-    void init()
+    void init(std::string file_name, mjModel *model, mjData *data)
     {
-    }
+        writer = new csv::csv_writer(file_name);
+        std::vector<std::string> jnt_names = mj::joint_names(model, data);
 
-    void wait_to_step(mjModel *m, mjData *d)
-    {
-        if (real_time && !video_record)
-        {
-            // Set current time
-            current_time = std::chrono::steady_clock::now();
-            std::chrono::duration<double> diff = current_time - initial_time;
-            double tdiff = d->time - diff.count();
+        std::vector<std::string> headers;
+        headers.push_back("time");
 
-            if (tdiff > 0)
-            {
-                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<long long int>(tdiff * 1000.0)));
-            }
-        }
+        headers.insert(headers.end(), jnt_names.begin(), jnt_names.end());
+
+        // printf("nq %d njnt %d headers %ld\n", m->nq, m->njnt, headers.size());
+        writer->set_headers(headers);
+        printf("INITIALIZED LOGGER\n");
     }
 
     void step(mjModel *model, mjData *data)
     {
-        wait_to_step(model, data);
-        // Simulation step
+        if (save_to_csv && writer)
         {
-            mj_step1(model, data);
-            control::controller_selector_arm2(model, data);
-            mj_step2(model, data);
-            sim_step++;
+            writer->append(data->time);
+            writer->append(data->qpos, model->nq);
         }
     }
 
     void finish(mjModel *m, mjData *d)
     {
-        // Cleanup
-        mj_deleteData(d);
-        mj_deleteModel(m);
-        printf("FINISHED SIMULATION\n");
+        delete writer;
+        writer = nullptr;
+        printf("FINISHED LOGGER\n");
     }
 }
 
-#endif // __SIMULATION__H_
+#endif // __LOGGER__H_

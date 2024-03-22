@@ -32,7 +32,6 @@ SOFTWARE.
 #include <cassert>
 #include <GLFW/glfw3.h>
 #include <mujoco/mujoco.h>
-#include <csv/csv.hpp>
 #ifdef USE_OPENCV
 #include <opencv4/opencv2/opencv.hpp>
 #endif
@@ -55,7 +54,8 @@ const bool high_quality_encoding = false;
 const bool high_quality_rendering = false;
 const bool use_simulation_fps_for_video = false;
 bool save_to_csv = true;
-bool real_time = true;
+bool real_time = false;
+bool show_window = true;
 bool show_fps = true;
 bool show_plot_figure = true;
 bool show_controller_name = true;
@@ -64,7 +64,6 @@ long long int video_frames_written = 0;
 double target_render_fps = 60.0;
 double target_render_time = 1.0 / target_render_fps;
 long long int sim_step = -1;
-csv::csv_writer *writer = nullptr;
 
 double end_time = 24.0; // Change this value
 // double end_time = std::numeric_limits<double>::max(); // Use this for undefined time

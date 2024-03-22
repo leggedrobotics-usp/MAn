@@ -58,7 +58,7 @@ namespace csv
 
             for (size_t i = 0; i < cols.size(); ++i)
             {
-                file << cur_line[i] << separator;
+                file << cur_line[i] << ((i == cols.size()-1) ? "" : separator);
             }
 
             file << std::endl;
@@ -71,7 +71,7 @@ namespace csv
 
             for (size_t i = 0; i < cols.size(); ++i)
             {
-                file << cols[i] << separator;
+                file << cols[i] << ((i == cols.size()-1) ? "" : separator);
             }
 
             file << std::endl;

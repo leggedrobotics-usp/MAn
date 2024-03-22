@@ -183,6 +183,9 @@ namespace render
 
     void init(mjModel *model, mjData *data)
     {
+        if (!show_window)
+            return;
+
         // init GLFW, create window, make OpenGL context current, request v-sync
         glfwInit();
         window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "MAn: Motion Antecipation", NULL, NULL);
@@ -236,6 +239,8 @@ namespace render
 
     void step(mjModel *model, mjData *data)
     {
+        if (!show_window)
+            return;
         if (glfwWindowShouldClose(window))
         {
             Exit = true;
@@ -311,6 +316,8 @@ namespace render
 
     void finish()
     {
+        if (!show_window)
+            return;
         // cleanup GLFW and visualization structures
         glfwTerminate();
         mjv_freeScene(&r.scn);

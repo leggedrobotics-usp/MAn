@@ -27,6 +27,7 @@ SOFTWARE.
 #include <control.hpp>
 #include <simulation.hpp>
 #include <render.hpp>
+#include <logger.hpp>
 
 int main()
 {
@@ -40,8 +41,8 @@ int main()
     m->vis.quality.offsamples = high_quality_rendering ? 4 : 1;
 
     basic::figures["time_qpos"] = reinterpret_cast<graphics::Figure *>(new graphics::FigureTimeGeneric("Joints' Positions"));
-    basic::figures["time_fi"]  = reinterpret_cast<graphics::Figure *>(new graphics::FigureTimeGeneric("Interaction Forces"));
-    basic::figures["time_ffwd"]  = reinterpret_cast<graphics::Figure *>(new graphics::FigureTimeGeneric("Feedforward Force"));
+    basic::figures["time_fi"] = reinterpret_cast<graphics::Figure *>(new graphics::FigureTimeGeneric("Interaction Forces"));
+    basic::figures["time_ffwd"] = reinterpret_cast<graphics::Figure *>(new graphics::FigureTimeGeneric("Feedforward Force"));
 
     graphics::figures_to_render.resize(3);
     graphics::figures_to_render[0] = basic::figures["time_qpos"];
@@ -52,16 +53,7 @@ int main()
     control::prepare_controller_selector();
 
     // Saving log to CSV file
-    // writer = new csv::csv_writer("log_arm2.csv");
-    // std::vector<std::string> jnt_names = mj::joint_names(m, d);
-
-    // std::vector<std::string> headers;
-    // headers.push_back("time");
-
-    // headers.insert(headers.end(), jnt_names.begin(), jnt_names.end());
-
-    // printf("nq %d njnt %d headers %ld\n", m->nq, m->njnt, headers.size());
-    // writer->set_headers(headers);
+    logger::init("log_arm2.csv", m, d);
     bufferd_init(&control::energy_b[0], WINDOW_SIZE); // initialize buffer with WINDOW_SIZE as maximum size
     bufferd_init(&control::energy_b[1], WINDOW_SIZE); // initialize buffer with WINDOW_SIZE as maximum size
 
@@ -71,6 +63,7 @@ int main()
     while (!Exit && d->time <= end_time)
     {
         simulation::step(m, d);
+        logger::step(m, d);
         render::step(m, d);
         video::step(m, d);
     }
@@ -78,6 +71,7 @@ int main()
     video::finish();
     render::finish();
     simulation::finish(m, d);
+    logger::finish(m, d);
 
     // Freeing control memory
     bufferd_free(&control::energy_b[0]);
