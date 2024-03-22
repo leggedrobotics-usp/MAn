@@ -26,12 +26,14 @@ def main():
         # big_table = big_table.join(table.set_index('time'), on='time')
     
     labels = big_table.columns[1:]
+    plt.figure(figsize=(21, 9), dpi=72)
     plt.plot(big_table['time'].to_list(),np.array([big_table[c].to_list() for c in labels]).T)
     plt.legend(labels)
     plt.title(f'Time x Joint Positions')
     plt.xlabel('Time (s)')
     plt.ylabel('Joint Positions (rad)')
     plt.grid(True)
+    plt.savefig("test.svg", format="svg")
     plt.show()
 
 
