@@ -50,10 +50,11 @@ int main()
     graphics::figures_to_render[2] = basic::figures["time_ffwd"];
 
     // preparing controller selector
+    control::init(m, d);
     control::prepare_controller_selector();
 
     // Saving log to CSV file
-    logger::init("log_arm2.csv", m, d);
+    logger::init("log_arm2.csv");
     bufferd_init(&control::energy_b[0], WINDOW_SIZE); // initialize buffer with WINDOW_SIZE as maximum size
     bufferd_init(&control::energy_b[1], WINDOW_SIZE); // initialize buffer with WINDOW_SIZE as maximum size
 
@@ -63,7 +64,7 @@ int main()
     while (!Exit && d->time <= end_time)
     {
         simulation::step(m, d);
-        logger::step(m, d);
+        logger::step();
         render::step(m, d);
         video::step(m, d);
     }

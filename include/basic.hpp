@@ -31,7 +31,7 @@ SOFTWARE.
 #include <condition_variable>
 #include <cassert>
 #include <GLFW/glfw3.h>
-#include <mujoco/mujoco.h>
+#include <utils/mju.hpp>
 #ifdef USE_OPENCV
 #include <opencv4/opencv2/opencv.hpp>
 #endif

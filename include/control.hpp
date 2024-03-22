@@ -25,7 +25,6 @@ SOFTWARE.
 #ifndef __CONTROL__H_
 #define __CONTROL__H_
 
-#include <basic.hpp>
 // Just to include control refenreces used in this code
 #include <control/references.hpp>
 
@@ -37,6 +36,11 @@ SOFTWARE.
 
 namespace control
 {
+
+    void init(mjModel *m, mjData *d)
+    {
+        jnt_names = mj::joint_names(m, d);
+    }
 
     void prepare_controller_selector()
     {
@@ -91,6 +95,9 @@ namespace control
     /// @param d - MuJoCo data pointer
     void controller_selector_arm2(const mjModel *m, mjData *d)
     {
+
+        logger::append("time", d->time);
+        logger::append(jnt_names, d->qpos);
 
         // SECTION 0
         // HUMAN REFERENCE ROUTINES
@@ -190,6 +197,10 @@ namespace control
         // time_interaction_force->append("human_interaction_energy_avg_elbow", d->time, variables_to_plot[7]);
         time_interaction_force->append("human_interaction_force_0", d->time, control::fi[0]);
         time_interaction_force->append("human_interaction_force_1", d->time, control::fi[1]);
+
+        logger::append("human_interaction_force_0", control::fi[0]);
+        logger::append("human_interaction_force_1", control::fi[1]);
+
 
         time_torques->append("Act_2", d->time, d->qfrc_actuator[2]);
         // time_torques->append("Act_3", d->time, d->qfrc_actuator[3]);

@@ -27,8 +27,8 @@ SOFTWARE.
 
 #include <string>
 #include <vector>
-#include <mujoco/mujoco.h>
-#include <utils/mju.hpp>
+#include <logger.hpp>
+#include <basic.hpp>
 #include <utils/circular_buffer.h>
 
 #define MAX_CONTROL_VARIABLES_TO_PLOT 12
@@ -47,6 +47,10 @@ namespace control
     std::vector<bool> active_control;
     std::vector<mjfGeneric> ctrl_functions;
     std::vector<std::string> ctrl_names;
+
+    // Simulation
+    
+    std::vector<std::string> jnt_names;
 
     //// Shared Controller/Dynamics Variables
 
@@ -74,14 +78,15 @@ namespace control
 
     // Extras
 
-    int nDqM = 0; // Dense Inertia Matrix Size
-    int nqMr = 0; // Robot Inertia Matrix Size
-    mjtNum jacp[12] = {0};     // Jacobian matrix for position
-    mjtNum jacv[12] = {0};     // Jacobian matrix for velocity
+    int nDqM = 0;          // Dense Inertia Matrix Size
+    int nqMr = 0;          // Robot Inertia Matrix Size
+    mjtNum jacp[12] = {0}; // Jacobian matrix for position
+    mjtNum jacv[12] = {0}; // Jacobian matrix for velocity
     mjtNum *DqM = nullptr; // Dense Inertia Matrix
     mjtNum *qMr = nullptr; // Robot Inertia Matrix
-    
+
     // Prediction
+
     mjData *pred_d = nullptr;
 
     // Energy Metrics

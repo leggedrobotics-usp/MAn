@@ -31,28 +31,35 @@ SOFTWARE.
 namespace logger
 {
     csv::csv_writer *writer = nullptr;
+    std::vector<std::string> headers;
+    std::map<std::string, double> header_values;
+    const double NaN = std::nan("0"); // NaN - Not-a-Number constant
 
-    void init(std::string file_name, mjModel *model, mjData *data)
+    void init(std::string file_name)
     {
         writer = new csv::csv_writer(file_name);
-        std::vector<std::string> jnt_names = mj::joint_names(model, data);
-
-        std::vector<std::string> headers;
-        headers.push_back("time");
-
-        headers.insert(headers.end(), jnt_names.begin(), jnt_names.end());
-
-        // printf("nq %d njnt %d headers %ld\n", m->nq, m->njnt, headers.size());
-        writer->set_headers(headers);
         printf("INITIALIZED LOGGER\n");
     }
 
-    void step(mjModel *model, mjData *data)
+    inline void init_headers()
+    {
+        if (writer->cols.size() == 0)
+            writer->set_headers(headers);
+    }
+
+    void step()
     {
         if (save_to_csv && writer)
         {
-            writer->append(data->time);
-            writer->append(data->qpos, model->nq);
+            // Init headers if not initialized
+            init_headers();
+
+            // For all headers, get current values
+            for (std::string &header : headers)
+            {
+                writer->append(header_values[header]);
+                header_values[header] = NaN;
+            }
         }
     }
 
@@ -61,6 +68,21 @@ namespace logger
         delete writer;
         writer = nullptr;
         printf("FINISHED LOGGER\n");
+    }
+
+    inline void append(std::string name, double value)
+    {
+        if (header_values.find(name) == header_values.end())
+            headers.push_back(name);
+        header_values[name] = value;
+    }
+
+    void append(std::vector<std::string> &names, double *values)
+    {
+        for (size_t i = 0; i < names.size(); ++i)
+        {
+            append(names[i], values[i]);
+        }
     }
 }
 
