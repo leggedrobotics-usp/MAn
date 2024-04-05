@@ -11,7 +11,7 @@ The Motion Antecipation repository (MAn)
 
 To install the requirements:
 ```bash
-sudo apt install libopengl-dev 
+sudo apt install libopengl-dev libglx-dev libgl1-mesa-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
 ```
 
 ### Automatic Included Requirements
