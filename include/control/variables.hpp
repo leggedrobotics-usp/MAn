@@ -33,7 +33,7 @@ SOFTWARE.
 
 #define MAX_CONTROL_VARIABLES_TO_PLOT 12
 #define CONTROL_VARIABLES_TO_PLOT 6
-#define WINDOW_SIZE 200 // 1 s for simulations with dt = 5ms
+#define WINDOW_SIZE 1000 // 1 s for simulations with dt = 1ms
 
 namespace control
 {
@@ -91,6 +91,7 @@ namespace control
 
     // Energy Metrics
 
+    double accumulated_energy_avg[2] = {0};
     double energy_last_element[2] = {0};
     double energy_avg_acc[2] = {0};
     double energy_avg_qnt[2] = {0};

@@ -65,15 +65,18 @@ namespace control
 
         // After last time + duration seconds of simulation time, use acceleration_feedback_control_arm2
         // time += duration;
-        time_barrier.push_back(time);
-        ctrl_names.push_back("Acceleration Feedback");
-        ctrl_functions.push_back(acceleration_feedback_control_arm2);
-        active_control.push_back(false);
+        // time_barrier.push_back(time);
+        // ctrl_names.push_back("Acceleration Feedback");
+        // ctrl_functions.push_back(acceleration_feedback_control_arm2);
+        // active_control.push_back(false);
 
         // Setting up graphics
         time_qpos = basic::figures["time_qpos"];
         time_torques = basic::figures["time_ffwd"];
         time_interaction_force = basic::figures["time_fi"];
+
+        // Initialize accumulated energy average
+        mju_fill(control::accumulated_energy_avg, 0, 2);
     }
 
     void clear_control_variables()
@@ -97,7 +100,7 @@ namespace control
     {
 
         logger::append("time", d->time);
-        logger::append(jnt_names, d->qpos);
+        // logger::append(jnt_names, d->qpos);
 
         // SECTION 0
         // HUMAN REFERENCE ROUTINES
@@ -152,6 +155,7 @@ namespace control
             if (control::energy_b[i].size < control::energy_b[i].max_size)
             {
                 double val = control::fi[i] * control::fi[i];
+                energy_avg_acc[i] += val; // O(1)
                 // double val = 0;
                 // printf("Before bufferd_push_back\n");
                 bufferd_push_back(&control::energy_b[i], val); // O(1)
@@ -159,14 +163,14 @@ namespace control
             else
             {
                 double val = control::fi[i] * control::fi[i];
+                energy_avg_acc[i] += val;                                                           // O(1)
                 bufferd_push_and_pop(&control::energy_b[i], val, &control::energy_last_element[i]); // O(1)
-
-                energy_avg_acc[i] -= energy_last_element[i]; // O(1)
+                energy_avg_acc[i] -= energy_last_element[i];                                        // O(1)
             }
             // printf("add %d == %d\n", input_vector[i], avg_acc);
             energy_avg_qnt[i] = static_cast<double>(energy_b[i].size);
         }
-        mju_add(control::energy_avg_acc, control::energy_avg_acc, control::fi, 2);
+        // mju_addTo(control::energy_avg_acc, control::fi, 2);
         mju::mju_div(control::energy_avg_val, control::energy_avg_acc, control::energy_avg_qnt, 2);
 
         // SECTION III
@@ -193,14 +197,18 @@ namespace control
 
         // Interaction Energy
         mju_copy(variables_to_plot + 6, control::energy_avg_val, 2);
+        // logger::append("human_interaction_energy_avg_shoulder", control::energy_avg_val[0]);
+        // logger::append("human_interaction_energy_avg_elbow", control::energy_avg_val[1]);
+        // logger::append("avg_total_human_interaction_energy", control::energy_avg_val[0] + control::energy_avg_val[1]);
+        mju_addTo(control::accumulated_energy_avg, control::energy_avg_val, 2);
+        logger::append("accumulated_energy_avg", std::log10(control::accumulated_energy_avg[0] + control::accumulated_energy_avg[1]));
         // time_interaction_force->append("human_interaction_energy_avg_shoulder", d->time, variables_to_plot[6]);
         // time_interaction_force->append("human_interaction_energy_avg_elbow", d->time, variables_to_plot[7]);
         time_interaction_force->append("human_interaction_force_0", d->time, control::fi[0]);
         time_interaction_force->append("human_interaction_force_1", d->time, control::fi[1]);
 
-        logger::append("human_interaction_force_0", control::fi[0]);
-        logger::append("human_interaction_force_1", control::fi[1]);
-
+        // logger::append("human_interaction_force_0", control::fi[0]);
+        // logger::append("human_interaction_force_1", control::fi[1]);
 
         time_torques->append("Act_2", d->time, d->qfrc_actuator[2]);
         // time_torques->append("Act_3", d->time, d->qfrc_actuator[3]);

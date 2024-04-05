@@ -90,14 +90,14 @@ namespace control
     {
 
         mjtNum tmp[2];
-        mjtNum kp[2] = {0.00001, 0.00001};
+        mjtNum kp[2] = {0.0001, 0.0001};
         mjtNum ki[2] = {0.0000126, 0.0000126};
         mjtNum time_tau = mju_max(m->actuator_dynprm[mjNDYN * 2], m->actuator_dynprm[mjNDYN * 3]);
         int nsteps = static_cast<int>((3 * time_tau) / m->opt.timestep);
         // printf("nsteps = %d\n", nsteps);
 
         // Calculate Feedforward Torques (Tff) | frff from eq. 5 in ref. [1] using inertia instead of mass
-        feedforward_arm2(m, d, control::Tff, 2, 2, false, nsteps);
+        feedforward_arm2(m, d, control::Tff, 2, 2, use_prediction, nsteps);
 
         // Set Tfb = 0
         mju_fill(control::Tfb, 0, 2); // Tfb = 0

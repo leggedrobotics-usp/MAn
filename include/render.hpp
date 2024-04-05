@@ -183,11 +183,14 @@ namespace render
 
     void init(mjModel *model, mjData *data)
     {
-        if (!show_window)
-            return;
-
+        // if (!show_window)
+        // return;
         // init GLFW, create window, make OpenGL context current, request v-sync
         glfwInit();
+        if (!show_window)
+        {
+            glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+        }
         window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "MAn: Motion Antecipation", NULL, NULL);
         glfwMakeContextCurrent(window);
         glfwSwapInterval(1);
@@ -239,9 +242,9 @@ namespace render
 
     void step(mjModel *model, mjData *data)
     {
-        if (!show_window)
-            return;
-        if (glfwWindowShouldClose(window))
+        // if (!show_window)
+        //     return;
+        if (show_window && glfwWindowShouldClose(window))
         {
             Exit = true;
             return;
@@ -255,10 +258,13 @@ namespace render
             // Update simulation data in the copied model and data
             mjv_updateScene(model, data, &r.opt, NULL, &r.cam, mjCAT_ALL, &r.scn);
 
-            // Get GLFW framebuffer viewport size
-            glfwGetFramebufferSize(window, &viewport.width, &viewport.height);
-            // Fix recording_label_viewport position
-            recording_label_viewport.bottom = viewport.height - 30;
+            if (show_window)
+            {
+                // Get GLFW framebuffer viewport size
+                glfwGetFramebufferSize(window, &viewport.width, &viewport.height);
+                // Fix recording_label_viewport position
+                recording_label_viewport.bottom = viewport.height - 30;
+            }
 
             // render the scene
             mjr_setBuffer(mjFB_OFFSCREEN, &r.con);
@@ -306,18 +312,24 @@ namespace render
                 render_fps(data);
             }
 
-            // swap OpenGL buffers
-            glfwSwapBuffers(window);
+            if (show_window)
+            {
+                // swap OpenGL buffers
+                glfwSwapBuffers(window);
+            }
         }
 
-        // process GUI events and callbacks
-        glfwPollEvents();
+        if (show_window)
+        {
+            // process GUI events and callbacks
+            glfwPollEvents();
+        }
     }
 
     void finish()
     {
-        if (!show_window)
-            return;
+        // if (!show_window)
+        //     return;
         // cleanup GLFW and visualization structures
         glfwTerminate();
         mjv_freeScene(&r.scn);
