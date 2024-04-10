@@ -88,6 +88,7 @@ namespace control
     // Prediction
 
     mjData *pred_d = nullptr;
+    mjfGeneric pred_f;
 
     // Energy Metrics
 

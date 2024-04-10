@@ -49,26 +49,29 @@ namespace control
         double time = 0;
         double duration = 10;
 
-        // // After last time + duration seconds of simulation time, use model_based_feedforward_control_arm2
-        // time += duration;
-        // time_barrier.push_back(time);
-        // ctrl_names.push_back("Model-based Feedforward");
-        // ctrl_functions.push_back(model_based_feedforward_control_arm2);
-        // active_control.push_back(false);
+        if (use_control)
+        {
+            // // After last time + duration seconds of simulation time, use model_based_feedforward_control_arm2
+            // time += duration;
+            time_barrier.push_back(time);
+            ctrl_names.push_back("Model-based Feedforward");
+            ctrl_functions.push_back(model_based_feedforward_control_arm2);
+            active_control.push_back(false);
 
-        // // After last time + duration seconds of simulation time, use interaction_force_feedback_control_arm2
-        // time += duration;
-        // time_barrier.push_back(time);
-        // ctrl_names.push_back("Interaction Force Feedback");
-        // ctrl_functions.push_back(interaction_force_feedback_control_arm2);
-        // active_control.push_back(false);
+            // // After last time + duration seconds of simulation time, use interaction_force_feedback_control_arm2
+            // time += duration;
+            // time_barrier.push_back(time);
+            // ctrl_names.push_back("Interaction Force Feedback");
+            // ctrl_functions.push_back(interaction_force_feedback_control_arm2);
+            // active_control.push_back(false);
 
-        // After last time + duration seconds of simulation time, use acceleration_feedback_control_arm2
-        // time += duration;
-        // time_barrier.push_back(time);
-        // ctrl_names.push_back("Acceleration Feedback");
-        // ctrl_functions.push_back(acceleration_feedback_control_arm2);
-        // active_control.push_back(false);
+            // After last time + duration seconds of simulation time, use acceleration_feedback_control_arm2
+            // time += duration;
+            // time_barrier.push_back(time);
+            // ctrl_names.push_back("Acceleration Feedback");
+            // ctrl_functions.push_back(acceleration_feedback_control_arm2);
+            // active_control.push_back(false);
+        }
 
         // Setting up graphics
         time_qpos = basic::figures["time_qpos"];
@@ -77,6 +80,11 @@ namespace control
 
         // Initialize accumulated energy average
         mju_fill(control::accumulated_energy_avg, 0, 2);
+
+        // Human motion function
+        // control::pred_f = simple_sin_position_arm2; // sin function
+        control::pred_f = new_sin_position_arm2; // new sin function
+        // control::pred_f = new_position_arm2; // step in 5 seconds
     }
 
     void clear_control_variables()
@@ -106,8 +114,7 @@ namespace control
         // HUMAN REFERENCE ROUTINES
 
         // Human ARM (2 DoF)
-        // simple_sin_position_arm2(m, d); // just position
-        new_position_arm2(m, d);
+        control::pred_f(m, d);
 
         // Calculating Interaction Force
         interaction_force_arm2(m, d, control::fi, 2, 2);
@@ -201,7 +208,10 @@ namespace control
         // logger::append("human_interaction_energy_avg_elbow", control::energy_avg_val[1]);
         // logger::append("avg_total_human_interaction_energy", control::energy_avg_val[0] + control::energy_avg_val[1]);
         mju_addTo(control::accumulated_energy_avg, control::energy_avg_val, 2);
-        logger::append("accumulated_energy_avg", std::log10(control::accumulated_energy_avg[0] + control::accumulated_energy_avg[1]));
+        // logger::append("accumulated_energy_avg", std::log10(control::accumulated_energy_avg[0] + control::accumulated_energy_avg[1]));
+        logger::append("accumulated_fi", control::fi[0] + control::fi[1]);
+        logger::append("fi0", control::fi[0]);
+        logger::append("fi1", control::fi[1]);
         // time_interaction_force->append("human_interaction_energy_avg_shoulder", d->time, variables_to_plot[6]);
         // time_interaction_force->append("human_interaction_energy_avg_elbow", d->time, variables_to_plot[7]);
         time_interaction_force->append("human_interaction_force_0", d->time, control::fi[0]);

@@ -47,7 +47,7 @@ namespace control
             mj_step1(m, control::pred_d);
 
             // Do actuation for this timestep
-            new_position_arm2(m, control::pred_d);
+            control::pred_f(m, control::pred_d);
 
             // Run second part of step
             mj_step2(m, control::pred_d);
