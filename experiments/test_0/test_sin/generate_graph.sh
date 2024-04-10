@@ -1,0 +1,2 @@
+#!/bin/bash
+python ../python/compare_simulations.py -f log_arm2_no_ctrl.csv -f log_arm2_mbffwd.csv -f log_arm2_afc_no_pred.csv -f log_arm2_afc_3tau.csv -l "No Control" -l "Model Based Feedforward" -l "Acceleration Feedback Control" -l "Acceleration Feedback Control + Prediction" -t "Time x Accumulated Interaction Forces (sin input)"
