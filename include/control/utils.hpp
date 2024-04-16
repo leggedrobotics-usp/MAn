@@ -111,9 +111,9 @@ namespace control
             // time_torques->append("qM_1", ld->time, qMr[1]);
             // time_torques->append("qM_2", ld->time, qMr[2]);
             // time_torques->append("qM_3", ld->time, qMr[3]);
-
-            mju_mulMatVec(ffwd, qMr, ld->qacc, 2, 2);
-            mju_addTo(ffwd, d->qfrc_bias + 2, 2);
+            mju_fill(ffwd, 0, 2);                     // ffwd = 0
+            mju_mulMatVec(ffwd, qMr, ld->qacc, 2, 2); // ffwd = qMr * ddq_h
+            mju_addTo(ffwd, d->qfrc_bias + 2, 2);     // ffwd = qMr * ddq_h + c(q_r,dq_r)
         }
     }
 

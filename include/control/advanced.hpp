@@ -40,7 +40,7 @@ namespace control
     void model_based_feedforward_control_arm2(const mjModel *m, mjData *d)
     {
         mjtNum time_tau = mju_max(m->actuator_dynprm[mjNDYN * 2], m->actuator_dynprm[mjNDYN * 3]);
-        int nsteps = static_cast<int>((3 * time_tau) / m->opt.timestep);
+        int nsteps = static_cast<int>((2 * time_tau) / m->opt.timestep);
 
         // Calculate feedforward (Tff) | frff from eq. 5 in ref. [1] using inertia instead of mass
         feedforward_arm2(m, d, control::Tff, 2, 2, use_prediction, nsteps);
@@ -96,7 +96,7 @@ namespace control
         mjtNum kp[2] = {0.0001, 0.0001};
         mjtNum ki[2] = {0.0000126, 0.0000126};
         mjtNum time_tau = mju_max(m->actuator_dynprm[mjNDYN * 2], m->actuator_dynprm[mjNDYN * 3]);
-        int nsteps = static_cast<int>((3 * time_tau) / m->opt.timestep);
+        int nsteps = static_cast<int>((1 * time_tau) / m->opt.timestep);
         // printf("nsteps = %d\n", nsteps);
 
         // Calculate Feedforward Torques (Tff) | frff from eq. 5 in ref. [1] using inertia instead of mass

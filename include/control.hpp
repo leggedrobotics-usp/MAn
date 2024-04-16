@@ -40,6 +40,20 @@ namespace control
     void init(mjModel *m, mjData *d)
     {
         jnt_names = mj::joint_names(m, d);
+
+        // Use the following code block for initial position != zero
+        {
+            // const mjtNum initial_shoulder_angle = -50;
+            // const mjtNum initial_shoulder_angle_rad = initial_shoulder_angle * M_PI / 180.0;
+
+            // const mjtNum initial_elbow_angle = 20;
+            // const mjtNum initial_elbow_angle_rad = initial_elbow_angle * M_PI / 180.0;
+
+            // d->qpos[0] = initial_shoulder_angle_rad;
+            // d->qpos[1] = initial_elbow_angle_rad;
+            // d->qpos[2] = initial_shoulder_angle_rad;
+            // d->qpos[3] = initial_elbow_angle_rad;
+        }
     }
 
     void prepare_controller_selector()
@@ -83,7 +97,8 @@ namespace control
 
         // Human motion function
         // control::pred_f = simple_sin_position_arm2; // sin function
-        control::pred_f = new_sin_position_arm2; // new sin function
+        // control::pred_f = new_sin_position_arm2; // new sin function
+        control::pred_f = sin_phase_position_arm2; // sin phase function
         // control::pred_f = new_position_arm2; // step in 5 seconds
     }
 
@@ -212,6 +227,12 @@ namespace control
         logger::append("accumulated_fi", control::fi[0] + control::fi[1]);
         logger::append("fi0", control::fi[0]);
         logger::append("fi1", control::fi[1]);
+        logger::append("human_qpos_shoulder", d->qpos[0]);
+        logger::append("human_qpos_elbow", d->qpos[1]);
+        logger::append("robot_qpos_shoulder", d->qpos[2]);
+        logger::append("robot_qpos_elbow", d->qpos[3]);
+        logger::append("human_dqpos_shoulder", d->ctrl[0]);
+        logger::append("human_dqpos_elbow", d->ctrl[1]);
         // time_interaction_force->append("human_interaction_energy_avg_shoulder", d->time, variables_to_plot[6]);
         // time_interaction_force->append("human_interaction_energy_avg_elbow", d->time, variables_to_plot[7]);
         time_interaction_force->append("human_interaction_force_0", d->time, control::fi[0]);
