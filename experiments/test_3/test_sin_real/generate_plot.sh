@@ -1,0 +1,10 @@
+#!/bin/bash
+# python ../../python/compare_simulations_per_joint.py -f log_arm2_mbffwd_no_pred.csv -f log_arm2_mbffwd_2tau.csv -c "fi0" -c "fi1" -y "Shoulder" -y "Elbow" -l "Feedforward" -l "Feedforward + Prediction" -t "Time x Interaction Torques (sin input)"
+# python ../../../python/compare_simulations_per_joint.py -f log_arm2_no_ctrl.csv -c "fi0" -c "fi1" -y "Shoulder" -y "Elbow" -l "Feedforward" -t "Time x Interaction Torques (sin input)"
+# python ../../../python/compare_simulations_per_joint.py -f log_arm2_no_ctrl.csv -f log_arm2_mbffwd_no_pred.csv -c "fi0" -c "fi1" -y "Shoulder" -y "Elbow" -l "No control" -l "Feedforward" -t "Time x Interaction Torques (sin input)"
+# python ../../../python/compare_simulations_per_joint.py -f log_arm2_no_ctrl.csv -f log_arm2_mbffwd_no_pred.csv -f log_arm2_mbffwd_1tau.csv -c "fi0" -c "fi1" -y "Shoulder" -y "Elbow" -l "No control" -l "Feedforward" -l "Feedforward + Prediction" -t "Time x Interaction Torques (sin input)"
+# python ../../../python/compare_simulations_per_joint.py -f log_arm2_no_ctrl.csv -f log_arm2_mbffwd_1tau.csv -c "fi0" -c "fi1" -y "Shoulder" -y "Elbow" -l "No control" -l "Feedforward + Prediction" -t "Time x Interaction Torques (sin input)"
+# python ../../../python/compare_simulations_per_joint.py -f log_arm2_no_ctrl.csv -f log_arm2_mbffwd_1step.csv -c "fi0" -c "fi1" -y "Shoulder" -y "Elbow" -l "No control" -l "Feedforward + Prediction" -t "Time x Interaction Torques (sin input)"
+# python ../../../python/compare_simulations_per_joint.py -f log_arm2_no_ctrl.csv -f log_arm2_mbffwd_no_pred.csv -f log_arm2_mbffwd_1step.csv -c "fi0" -c "fi1" -y "Shoulder" -y "Elbow" -l "No control" -l "Feedforward" -l "Feedforward + Prediction" -t "Time x Interaction Torques (sin input)"
+# python ../../../python/compare_simulations_per_joint.py -f log_arm2_mbffwd_no_pred.csv -f log_arm2_mbffwd_1step.csv -c "fi0" -c "fi1" -y "Shoulder" -y "Elbow" -l "Feedforward" -l "Feedforward + Prediction" -t "Time x Interaction Torques (sin input)"
+python ../../../python/compare_simulations.py -f log_arm2_mbffwd_1tau22.csv -l "Feedforward + Prediction" -t "Time x Interaction Torques (sin input)"
