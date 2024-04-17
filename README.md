@@ -5,6 +5,10 @@ Example of result for Transparency Control using Motion Antecipation:
 
 ![test_sin_phase](experiments/test_4/test_sin_phase/test_sin_phase.svg "test_sin_phase")
 
+
+https://github.com/leggedrobotics-usp/MAn/assets/16033414/19e32b81-e222-49c9-940d-cfae71255dac
+
+
 # Requirements
 
 ## General Requirements
