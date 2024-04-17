@@ -1,6 +1,10 @@
 # MAn
 The Motion Antecipation repository (MAn)
 
+Example of result for Transparency Control using Motion Antecipation:
+
+![test_sin_phase](experiments/test_4/test_sin_phase/test_sin_phase.svg "test_sin_phase")
+
 # Requirements
 
 ## General Requirements
